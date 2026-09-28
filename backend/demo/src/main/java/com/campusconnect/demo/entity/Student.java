@@ -39,4 +39,7 @@ public class Student {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @Column(nullable = false)
+    private boolean active = true;
 }

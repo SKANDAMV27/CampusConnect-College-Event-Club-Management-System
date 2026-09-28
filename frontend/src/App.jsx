@@ -1,4 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 
@@ -14,33 +19,32 @@ import EventDetails from "./pages/student/EventDetails";
 import MyRegistrations from "./pages/student/MyRegistrations";
 import Profile from "./pages/student/Profile";
 
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./layouts/AdminLayout";
+
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminClubs from "./pages/admin/AdminClubs";
+import AdminStudents from "./pages/admin/AdminStudents";
+import AdminRegistrations from "./pages/admin/AdminRegistrations";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminProfile from "./pages/admin/AdminProfile";
+
 function App() {
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* =========================
-            Landing Page
-        ========================== */}
-
+        {/* Default */}
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
         />
 
-        {/* =========================
-            Public Routes
-        ========================== */}
-
+        {/* Authentication */}
         <Route
           path="/login"
-          element={
-            <>
-              <Navbar />
-              <Login />
-            </>
-          }
+          element={<Login />}
         />
 
         <Route
@@ -63,10 +67,7 @@ function App() {
           }
         />
 
-        {/* =========================
-            Home - Optional
-        ========================== */}
-
+        {/* Public */}
         <Route
           path="/home"
           element={
@@ -77,12 +78,11 @@ function App() {
           }
         />
 
-        {/* =========================
-            Student Routes
-        ========================== */}
+        {/* ========================= */}
+        {/* STUDENT ROUTES */}
+        {/* ========================= */}
 
         <Route element={<StudentLayout />}>
-
           <Route
             path="/dashboard"
             element={<StudentDashboard />}
@@ -107,11 +107,54 @@ function App() {
             path="/profile"
             element={<Profile />}
           />
+        </Route>
 
+        {/* ========================= */}
+        {/* ADMIN ROUTES */}
+        {/* ========================= */}
+
+        <Route element={<ProtectedRoute role="ADMIN" />}>
+          <Route element={<AdminLayout />}>
+
+            <Route
+              path="/admin/dashboard"
+              element={<AdminDashboard />}
+            />
+
+            <Route
+              path="/admin/events"
+              element={<AdminEvents />}
+            />
+
+            <Route
+              path="/admin/clubs"
+              element={<AdminClubs />}
+            />
+
+            <Route
+              path="/admin/students"
+              element={<AdminStudents />}
+            />
+
+            <Route
+              path="/admin/registrations"
+              element={<AdminRegistrations />}
+            />
+
+            <Route
+              path="/admin/announcements"
+              element={<AdminAnnouncements />}
+            />
+
+            <Route
+              path="/admin/profile"
+              element={<AdminProfile />}
+            />
+
+          </Route>
         </Route>
 
       </Routes>
-
     </BrowserRouter>
   );
 }
