@@ -1,5 +1,7 @@
 package com.campusconnect.demo.service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,5 +39,39 @@ public class JwtService {
                 )
                 .signWith(getKey())
                 .compact();
+    }
+
+    public Claims extractClaims(String token) {
+
+        return Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public String extractEmail(String token) {
+
+        return extractClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+
+        return extractClaims(token)
+                .get("role", String.class);
+    }
+
+    public boolean isValid(String token) {
+
+        try {
+
+            extractClaims(token);
+
+            return true;
+
+        } catch (JwtException | IllegalArgumentException e) {
+
+            return false;
+        }
     }
 }
