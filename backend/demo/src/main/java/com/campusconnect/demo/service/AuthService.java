@@ -59,7 +59,7 @@ public class AuthService {
         student.setUsn(request.getUsn());
         student.setYear(request.getYear());
         student.setDepartment(request.getDepartment());
-
+        student.setActive(true);
         student.setPassword(
                 passwordEncoder.encode(
                         request.getPassword()

@@ -4,6 +4,7 @@ import com.campusconnect.demo.entity.EventRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EventRegistrationRepository
         extends JpaRepository<EventRegistration, Long> {
@@ -24,4 +25,21 @@ public interface EventRegistrationRepository
             Long eventId,
             Long studentId
     );
+
+    List<EventRegistration>
+    findByStudentIdOrderByRegisteredAtDesc(
+            Long studentId
+    );
+
+    long countByStudentIdAndStatus(
+            Long studentId,
+            String status
+    );
+
+    Optional<EventRegistration> findByEventIdAndStudentId(
+            Long eventId,
+            Long studentId
+    );
+
+    long countByEventIdAndStatus(Long eventId, String status);
 }
