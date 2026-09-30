@@ -10,8 +10,10 @@ import {
   Users,
   Image,
   FileText,
+  Search,
 } from "lucide-react";
 import Swal from "sweetalert2";
+
 import { apiFetch } from "../../api/api";
 import { getAdminEvents } from "../../api/adminApi";
 
@@ -38,14 +40,23 @@ function AdminEvents() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Server-side search & pagination
+  // =========================================================
+  // SEARCH / FILTER / PAGINATION
+  // =========================================================
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+
+  // Always display maximum 10 records
+  const size = 10;
 
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+
+  // =========================================================
+  // LOAD EVENTS
+  // =========================================================
 
   const loadEvents = async () => {
     try {
@@ -61,7 +72,6 @@ function AdminEvents() {
       setEvents(data.content || []);
       setTotalPages(data.totalPages || 0);
       setTotalElements(data.totalElements || 0);
-
     } catch (error) {
       console.error("Failed to load events:", error);
 
@@ -72,6 +82,8 @@ function AdminEvents() {
       });
 
       setEvents([]);
+      setTotalPages(0);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
@@ -79,7 +91,11 @@ function AdminEvents() {
 
   useEffect(() => {
     loadEvents();
-  }, [page, size, search, status]);
+  }, [page, search, status]);
+
+  // =========================================================
+  // FORM
+  // =========================================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -121,6 +137,10 @@ function AdminEvents() {
     setShowForm(false);
   };
 
+  // =========================================================
+  // CREATE / UPDATE EVENT
+  // =========================================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -134,6 +154,7 @@ function AdminEvents() {
         title: "Invalid Time",
         text: "End time must be later than start time.",
       });
+
       return;
     }
 
@@ -147,6 +168,7 @@ function AdminEvents() {
         title: "Invalid Deadline",
         text: "Registration deadline cannot be after the event date.",
       });
+
       return;
     }
 
@@ -191,6 +213,7 @@ function AdminEvents() {
       });
 
       closeForm();
+
       await loadEvents();
     } catch (error) {
       Swal.fire({
@@ -202,6 +225,10 @@ function AdminEvents() {
       setSaving(false);
     }
   };
+
+  // =========================================================
+  // DELETE EVENT
+  // =========================================================
 
   const deleteEvent = async (id) => {
     const result = await Swal.fire({
@@ -215,7 +242,9 @@ function AdminEvents() {
       cancelButtonText: "Cancel",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
       await apiFetch(`/admin/events/${id}`, {
@@ -229,7 +258,13 @@ function AdminEvents() {
         timer: 1200,
       });
 
-      loadEvents();
+      // If deleting the last item on a page,
+      // move back one page.
+      if (events.length === 1 && page > 0) {
+        setPage((previousPage) => previousPage - 1);
+      } else {
+        await loadEvents();
+      }
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -239,10 +274,61 @@ function AdminEvents() {
     }
   };
 
+  // =========================================================
+  // SEARCH
+  // =========================================================
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+
+    // Always go back to first page
+    // when search changes.
+    setPage(0);
+  };
+
+  // =========================================================
+  // STATUS FILTER
+  // =========================================================
+
+  const handleStatusChange = (e) => {
+    setStatus(e.target.value);
+
+    // Always go back to first page
+    // when filter changes.
+    setPage(0);
+  };
+
+  // =========================================================
+  // PAGINATION
+  // =========================================================
+
+  const goToPage = (pageNumber) => {
+    if (pageNumber < 0 || pageNumber >= totalPages) {
+      return;
+    }
+
+    setPage(pageNumber);
+  };
+
+  const startRecord =
+    totalElements === 0 ? 0 : page * size + 1;
+
+  const endRecord =
+    Math.min((page + 1) * size, totalElements);
+
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             Events
@@ -265,19 +351,29 @@ function AdminEvents() {
         )}
       </div>
 
-      {/* Form */}
+      {/* =====================================================
+          FORM
+      ===================================================== */}
+
       {showForm && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
+
           {/* Form Header */}
+
           <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {editingId ? "Edit Event" : "Create New Event"}
+                {editingId
+                  ? "Edit Event"
+                  : "Create New Event"}
               </h2>
 
               <p className="text-sm text-gray-500 mt-1">
                 Fill in the details below to{" "}
-                {editingId ? "update the event." : "create an event."}
+                {editingId
+                  ? "update the event."
+                  : "create an event."}
               </p>
             </div>
 
@@ -291,20 +387,34 @@ function AdminEvents() {
           </div>
 
           <form onSubmit={handleSubmit}>
+
             <div className="p-6 space-y-8">
+
               {/* Event Information */}
+
               <section>
+
                 <div className="flex items-center gap-2 mb-5">
-                  <FileText size={19} className="text-blue-600" />
+
+                  <FileText
+                    size={19}
+                    className="text-blue-600"
+                  />
+
                   <h3 className="font-semibold text-gray-900">
                     Event Information
                   </h3>
+
                 </div>
 
                 <div className="space-y-5">
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Title <span className="text-red-500">*</span>
+                      Event Title{" "}
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <input
@@ -320,9 +430,12 @@ function AdminEvents() {
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Description{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <textarea
@@ -339,25 +452,37 @@ function AdminEvents() {
                     <p className="text-xs text-gray-400 mt-1 text-right">
                       {form.description.length}/1000
                     </p>
+
                   </div>
+
                 </div>
               </section>
 
               {/* Schedule */}
+
               <section>
+
                 <div className="flex items-center gap-2 mb-5">
-                  <CalendarDays size={19} className="text-blue-600" />
+
+                  <CalendarDays
+                    size={19}
+                    className="text-blue-600"
+                  />
 
                   <h3 className="font-semibold text-gray-900">
                     Schedule
                   </h3>
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Event Date{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <input
@@ -371,6 +496,7 @@ function AdminEvents() {
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Registration Deadline
                     </label>
@@ -382,12 +508,16 @@ function AdminEvents() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
+
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Time{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <input
@@ -398,9 +528,11 @@ function AdminEvents() {
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
+
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       End Time
                     </label>
@@ -412,24 +544,38 @@ function AdminEvents() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
+
                   </div>
+
                 </div>
               </section>
 
               {/* Location & Capacity */}
+
               <section>
+
                 <div className="flex items-center gap-2 mb-5">
-                  <MapPin size={19} className="text-blue-600" />
+
+                  <MapPin
+                    size={19}
+                    className="text-blue-600"
+                  />
 
                   <h3 className="font-semibold text-gray-900">
                     Location & Capacity
                   </h3>
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Venue <span className="text-red-500">*</span>
+                      Venue{" "}
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <input
@@ -442,14 +588,17 @@ function AdminEvents() {
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
+
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Maximum Participants
                     </label>
 
                     <div className="relative">
+
                       <Users
                         size={18}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -464,26 +613,39 @@ function AdminEvents() {
                         min="1"
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
+
                     </div>
                   </div>
+
                 </div>
               </section>
 
               {/* Publishing */}
+
               <section>
+
                 <div className="flex items-center gap-2 mb-5">
-                  <Clock3 size={19} className="text-blue-600" />
+
+                  <Clock3
+                    size={19}
+                    className="text-blue-600"
+                  />
 
                   <h3 className="font-semibold text-gray-900">
                     Publishing
                   </h3>
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Event Status{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <select
@@ -492,19 +654,33 @@ function AdminEvents() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     >
-                      <option value="DRAFT">Draft</option>
-                      <option value="PUBLISHED">Published</option>
-                      <option value="CANCELLED">Cancelled</option>
-                      <option value="COMPLETED">Completed</option>
+                      <option value="DRAFT">
+                        Draft
+                      </option>
+
+                      <option value="PUBLISHED">
+                        Published
+                      </option>
+
+                      <option value="CANCELLED">
+                        Cancelled
+                      </option>
+
+                      <option value="COMPLETED">
+                        Completed
+                      </option>
                     </select>
+
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Event Image URL
                     </label>
 
                     <div className="relative">
+
                       <Image
                         size={18}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -518,14 +694,19 @@ function AdminEvents() {
                         placeholder="https://example.com/event-image.jpg"
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
+
                     </div>
                   </div>
+
                 </div>
               </section>
+
             </div>
 
-            {/* Footer */}
+            {/* Form Footer */}
+
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+
               <button
                 type="button"
                 onClick={closeForm}
@@ -546,30 +727,112 @@ function AdminEvents() {
                   ? "Update Event"
                   : "Create Event"}
               </button>
+
             </div>
+
           </form>
         </div>
       )}
 
-      {/* Events Table */}
+      {/* =====================================================
+          EVENTS TABLE
+      ===================================================== */}
+
       {!showForm && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              All Events
-            </h2>
 
-            <p className="text-sm text-gray-500 mt-1">
-              {events.length} event{events.length !== 1 ? "s" : ""}
-            </p>
+          {/* Table Header */}
+
+          <div className="px-6 py-5 border-b border-gray-200">
+
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+              <div>
+
+                <h2 className="text-lg font-semibold text-gray-900">
+                  All Events
+                </h2>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  {totalElements} event
+                  {totalElements !== 1 ? "s" : ""}
+                </p>
+
+              </div>
+
+              {/* Search + Filter */}
+
+              <div className="flex flex-col sm:flex-row gap-3">
+
+                {/* Search */}
+
+                <div className="relative">
+
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={handleSearchChange}
+                    placeholder="Search events..."
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+
+                </div>
+
+                {/* Status Filter */}
+
+                <select
+                  value={status}
+                  onChange={handleStatusChange}
+                  className="w-full sm:w-48 px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="">
+                    All Status
+                  </option>
+
+                  <option value="DRAFT">
+                    Draft
+                  </option>
+
+                  <option value="PUBLISHED">
+                    Published
+                  </option>
+
+                  <option value="CANCELLED">
+                    Cancelled
+                  </option>
+
+                  <option value="COMPLETED">
+                    Completed
+                  </option>
+                </select>
+
+              </div>
+
+            </div>
           </div>
+
+          {/* =================================================
+              LOADING
+          ================================================= */}
 
           {loading ? (
             <div className="p-10 text-center text-gray-500">
               Loading events...
             </div>
+
           ) : events.length === 0 ? (
+
+            /* =================================================
+               EMPTY
+            ================================================= */
+
             <div className="p-12 text-center">
+
               <CalendarDays
                 size={45}
                 className="mx-auto text-gray-300 mb-3"
@@ -580,105 +843,253 @@ function AdminEvents() {
               </h3>
 
               <p className="text-sm text-gray-500 mt-1">
-                Create your first event to get started.
+                {search || status
+                  ? "Try changing your search or filter."
+                  : "Create your first event to get started."}
               </p>
+
             </div>
+
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Event
-                    </th>
 
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Date
-                    </th>
+            /* =================================================
+               TABLE + PAGINATION
+            ================================================= */
 
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Venue
-                    </th>
+            <>
 
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Status
-                    </th>
+              {/* Table */}
 
-                    <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+              <div className="overflow-x-auto">
 
-                <tbody>
-                  {events.map((event) => (
-                    <tr
-                      key={event.id}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">
-                          {event.title}
-                        </p>
+                <table className="w-full">
 
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                          {event.description}
-                        </p>
-                      </td>
+                  <thead className="bg-gray-50 border-b">
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {event.eventDate}
-                      </td>
+                    <tr>
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {event.venue}
-                      </td>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                        Event
+                      </th>
 
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            event.status === "PUBLISHED"
-                              ? "bg-green-100 text-green-700"
-                              : event.status === "CANCELLED"
-                              ? "bg-red-100 text-red-700"
-                              : event.status === "COMPLETED"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-yellow-100 text-yellow-700"
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                        Date
+                      </th>
+
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                        Venue
+                      </th>
+
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                        Status
+                      </th>
+
+                      <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">
+                        Actions
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+                  <tbody>
+
+                    {events.map((event) => (
+
+                      <tr
+                        key={event.id}
+                        className="border-b last:border-b-0 hover:bg-gray-50"
+                      >
+
+                        <td className="px-6 py-4">
+
+                          <p className="font-medium text-gray-900">
+                            {event.title}
+                          </p>
+
+                          <div className="relative group mt-1 max-w-md">
+                            <p className="text-sm text-gray-500 truncate cursor-help">
+                              {event.description}
+                            </p>
+
+                            {/* Full description on hover */}
+                            <div className="absolute left-0 top-full z-50 hidden group-hover:block w-96 mt-2">
+                              <div className="bg-gray-900 text-white text-sm rounded-lg shadow-xl p-4 whitespace-normal break-words">
+                                {event.description}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {event.eventDate}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {event.venue}
+                        </td>
+
+                        <td className="px-6 py-4">
+
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                              event.status === "PUBLISHED"
+                                ? "bg-green-100 text-green-700"
+                                : event.status === "CANCELLED"
+                                ? "bg-red-100 text-red-700"
+                                : event.status === "COMPLETED"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {event.status}
+                          </span>
+
+                        </td>
+
+                        <td className="px-6 py-4">
+
+                          <div className="flex justify-end gap-2">
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openEditForm(event)
+                              }
+                              className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                              title="Edit"
+                            >
+                              <Pencil size={17} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteEvent(event.id)
+                              }
+                              className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
+                              title="Delete"
+                            >
+                              <Trash2 size={17} />
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              {/* =================================================
+                  PAGINATION
+              ================================================= */}
+
+              {totalPages > 0 && (
+
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+
+                    {/* Record count */}
+
+                    <p className="text-sm text-gray-600">
+
+                      Showing{" "}
+
+                      <span className="font-medium">
+                        {startRecord}
+                      </span>
+
+                      {" "}to{" "}
+
+                      <span className="font-medium">
+                        {endRecord}
+                      </span>
+
+                      {" "}of{" "}
+
+                      <span className="font-medium">
+                        {totalElements}
+                      </span>
+
+                      {" "}events
+
+                    </p>
+
+                    {/* Pagination */}
+
+                    <div className="flex items-center gap-1">
+
+                      {/* Previous */}
+
+                      <button
+                        type="button"
+                        disabled={page === 0}
+                        onClick={() =>
+                          goToPage(page - 1)
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+
+                      {/* Page Numbers */}
+
+                      {Array.from(
+                        { length: totalPages },
+                        (_, index) => index
+                      ).map((pageNumber) => (
+
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() =>
+                            goToPage(pageNumber)
+                          }
+                          className={`min-w-10 px-3 py-2 border rounded-lg text-sm font-medium ${
+                            page === pageNumber
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
                           }`}
                         >
-                          {event.status}
-                        </span>
-                      </td>
+                          {pageNumber + 1}
+                        </button>
 
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openEditForm(event)}
-                            className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                            title="Edit"
-                          >
-                            <Pencil size={17} />
-                          </button>
+                      ))}
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              deleteEvent(event.id)
-                            }
-                            className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
-                            title="Delete"
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      {/* Next */}
+
+                      <button
+                        type="button"
+                        disabled={
+                          page >= totalPages - 1
+                        }
+                        onClick={() =>
+                          goToPage(page + 1)
+                        }
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </>
+
           )}
+
         </div>
       )}
     </div>
