@@ -1,649 +1,625 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Pencil,
   Trash2,
   X,
-  CalendarDays,
-  MapPin,
-  Clock3,
-  Users,
-  Image,
+  Megaphone,
+  Search,
   FileText,
+  CheckCircle2,
+  Clock3,
+  Loader2,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { apiFetch } from "../../api/api";
 
 const emptyForm = {
   title: "",
-  description: "",
-  eventDate: "",
-  startTime: "",
-  endTime: "",
-  venue: "",
-  maxParticipants: "",
-  registrationDeadline: "",
-  imageUrl: "",
-  status: "DRAFT",
+  message: "",
+  published: false,
 };
 
-function AdminEvents() {
-  const [events, setEvents] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+const MAX_MESSAGE_LENGTH = 1000;
+
+const AdminAnnouncements = () => {
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const loadEvents = async () => {
+  // ---------------------------------------------------------
+  // Fetch announcements
+  // ---------------------------------------------------------
+  const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      const data = await apiFetch("/admin/events");
-      setEvents(Array.isArray(data) ? data : []);
+
+      const data = await apiFetch("/admin/announcements");
+
+      const announcementList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.content)
+        ? data.content
+        : [];
+
+      setAnnouncements(announcementList);
     } catch (error) {
+      console.error("Failed to fetch announcements:", error);
+
       Swal.fire({
         icon: "error",
-        title: "Unable to load events",
-        text: error.message,
+        title: "Unable to load announcements",
+        text: error.message || "Something went wrong.",
+        confirmButtonColor: "#2563eb",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  // ---------------------------------------------------------
+  // Search
+  // ---------------------------------------------------------
+  const filteredAnnouncements = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
 
+    if (!keyword) {
+      return announcements;
+    }
+
+    return announcements.filter((announcement) => {
+      const title = announcement.title || "";
+      const message = announcement.message || "";
+
+      return (
+        title.toLowerCase().includes(keyword) ||
+        message.toLowerCase().includes(keyword)
+      );
+    });
+  }, [announcements, search]);
+
+  // ---------------------------------------------------------
+  // Open create form
+  // ---------------------------------------------------------
   const openCreateForm = () => {
+    setEditingAnnouncement(null);
     setForm(emptyForm);
-    setEditingId(null);
     setShowForm(true);
   };
 
-  const openEditForm = (event) => {
-    setEditingId(event.id);
+  // ---------------------------------------------------------
+  // Open edit form
+  // ---------------------------------------------------------
+  const openEditForm = (announcement) => {
+    setEditingAnnouncement(announcement);
 
     setForm({
-      title: event.title || "",
-      description: event.description || "",
-      eventDate: event.eventDate || "",
-      startTime: event.startTime || "",
-      endTime: event.endTime || "",
-      venue: event.venue || "",
-      maxParticipants: event.maxParticipants || "",
-      registrationDeadline: event.registrationDeadline || "",
-      imageUrl: event.imageUrl || "",
-      status: event.status || "DRAFT",
+      title: announcement.title || "",
+      message: announcement.message || "",
+      published: Boolean(announcement.published),
     });
 
     setShowForm(true);
   };
 
+  // ---------------------------------------------------------
+  // Close form
+  // ---------------------------------------------------------
   const closeForm = () => {
-    setForm(emptyForm);
-    setEditingId(null);
+    if (saving) return;
+
     setShowForm(false);
+    setEditingAnnouncement(null);
+    setForm(emptyForm);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ---------------------------------------------------------
+  // Form change
+  // ---------------------------------------------------------
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
 
-    if (
-      form.endTime &&
-      form.startTime &&
-      form.endTime <= form.startTime
-    ) {
+    setForm((previous) => ({
+      ...previous,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // ---------------------------------------------------------
+  // Validation
+  // ---------------------------------------------------------
+  const validateForm = () => {
+    const title = form.title.trim();
+    const message = form.message.trim();
+
+    if (!title) {
       Swal.fire({
         icon: "warning",
-        title: "Invalid Time",
-        text: "End time must be later than start time.",
+        title: "Title required",
+        text: "Please enter an announcement title.",
+        confirmButtonColor: "#2563eb",
       });
+
+      return false;
+    }
+
+    if (title.length > 150) {
+      Swal.fire({
+        icon: "warning",
+        title: "Title too long",
+        text: "Announcement title cannot exceed 150 characters.",
+        confirmButtonColor: "#2563eb",
+      });
+
+      return false;
+    }
+
+    if (!message) {
+      Swal.fire({
+        icon: "warning",
+        title: "Message required",
+        text: "Please enter the announcement message.",
+        confirmButtonColor: "#2563eb",
+      });
+
+      return false;
+    }
+
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      Swal.fire({
+        icon: "warning",
+        title: "Message too long",
+        text: `Announcement message cannot exceed ${MAX_MESSAGE_LENGTH} characters.`,
+        confirmButtonColor: "#2563eb",
+      });
+
+      return false;
+    }
+
+    return true;
+  };
+
+  // ---------------------------------------------------------
+  // Save announcement
+  // ---------------------------------------------------------
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
-    if (
-      form.registrationDeadline &&
-      form.eventDate &&
-      form.registrationDeadline > form.eventDate
-    ) {
-      Swal.fire({
-        icon: "warning",
-        title: "Invalid Deadline",
-        text: "Registration deadline cannot be after the event date.",
-      });
-      return;
-    }
+    const payload = {
+      title: form.title.trim(),
+      message: form.message.trim(),
+      published: form.published,
+    };
 
     try {
       setSaving(true);
 
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        eventDate: form.eventDate,
-        startTime: form.startTime,
-        endTime: form.endTime || null,
-        venue: form.venue.trim(),
-        maxParticipants: form.maxParticipants
-          ? Number(form.maxParticipants)
-          : null,
-        registrationDeadline:
-          form.registrationDeadline || null,
-        imageUrl: form.imageUrl.trim() || null,
-        status: form.status,
-      };
+      if (editingAnnouncement) {
+        await apiFetch(
+          `/admin/announcements/${editingAnnouncement.id}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          }
+        );
 
-      if (editingId) {
-        await apiFetch(`/admin/events/${editingId}`, {
-          method: "PUT",
-          body: JSON.stringify(payload),
+        await Swal.fire({
+          icon: "success",
+          title: "Announcement updated",
+          text: "The announcement has been updated successfully.",
+          confirmButtonColor: "#2563eb",
+          timer: 1800,
+          showConfirmButton: false,
         });
       } else {
-        await apiFetch("/admin/events", {
+        await apiFetch("/admin/announcements", {
           method: "POST",
           body: JSON.stringify(payload),
         });
+
+        await Swal.fire({
+          icon: "success",
+          title: "Announcement created",
+          text: "The announcement has been created successfully.",
+          confirmButtonColor: "#2563eb",
+          timer: 1800,
+          showConfirmButton: false,
+        });
       }
 
-      await Swal.fire({
-        icon: "success",
-        title: editingId
-          ? "Event Updated Successfully"
-          : "Event Created Successfully",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-
       closeForm();
-      await loadEvents();
+      await fetchAnnouncements();
     } catch (error) {
+      console.error("Failed to save announcement:", error);
+
       Swal.fire({
         icon: "error",
-        title: "Unable to save event",
-        text: error.message,
+        title: "Save failed",
+        text: error.message || "Unable to save the announcement.",
+        confirmButtonColor: "#2563eb",
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const deleteEvent = async (id) => {
+  // ---------------------------------------------------------
+  // Delete announcement
+  // ---------------------------------------------------------
+  const handleDelete = async (announcement) => {
     const result = await Swal.fire({
-      title: "Delete Event?",
-      text: "This action cannot be undone.",
       icon: "warning",
+      title: "Delete announcement?",
+      text: `"${announcement.title}" will be permanently deleted.`,
       showCancelButton: true,
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, Delete",
+      confirmButtonText: "Yes, delete",
       cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
     });
 
-    if (!result.isConfirmed) return;
+    if (!result.isConfirmed) {
+      return;
+    }
 
     try {
-      await apiFetch(`/admin/events/${id}`, {
+      setDeletingId(announcement.id);
+
+      await apiFetch(`/admin/announcements/${announcement.id}`, {
         method: "DELETE",
       });
 
+      setAnnouncements((previous) =>
+        previous.filter((item) => item.id !== announcement.id)
+      );
+
       await Swal.fire({
         icon: "success",
-        title: "Event Deleted",
+        title: "Deleted",
+        text: "The announcement has been deleted successfully.",
+        confirmButtonColor: "#2563eb",
+        timer: 1600,
         showConfirmButton: false,
-        timer: 1200,
       });
-
-      loadEvents();
     } catch (error) {
+      console.error("Failed to delete announcement:", error);
+
       Swal.fire({
         icon: "error",
-        title: "Unable to delete event",
-        text: error.message,
+        title: "Delete failed",
+        text: error.message || "Unable to delete the announcement.",
+        confirmButtonColor: "#2563eb",
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
+  // ---------------------------------------------------------
+  // Format date
+  // ---------------------------------------------------------
+  const formatDate = (value) => {
+    if (!value) {
+      return "-";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // ---------------------------------------------------------
+  // Statistics
+  // ---------------------------------------------------------
+  const totalAnnouncements = announcements.length;
+
+  const publishedAnnouncements = announcements.filter(
+    (announcement) => announcement.published === true
+  ).length;
+
+  const draftAnnouncements = totalAnnouncements - publishedAnnouncements;
+
+  // ---------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Events
-          </h1>
+    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        {/* ------------------------------------------------ */}
+        {/* Header */}
+        {/* ------------------------------------------------ */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <Megaphone size={22} />
+              </div>
 
-          <p className="text-gray-500 mt-1">
-            Create and manage college events.
-          </p>
-        </div>
+              <div>
+                <h1 className="text-2xl font-semibold text-slate-900">
+                  Announcements
+                </h1>
 
-        {!showForm && (
+                <p className="mt-1 text-sm text-slate-500">
+                  Create and manage college announcements.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={openCreateForm}
-            className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-3 rounded-lg transition"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <Plus size={19} />
-            Create Event
+            <Plus size={18} />
+            Create Announcement
           </button>
-        )}
-      </div>
+        </div>
 
-      {/* Form */}
-      {showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
-          {/* Form Header */}
-          <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {editingId ? "Edit Event" : "Create New Event"}
-              </h2>
+        {/* ------------------------------------------------ */}
+        {/* Statistics */}
+        {/* ------------------------------------------------ */}
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Total Announcements
+                </p>
 
-              <p className="text-sm text-gray-500 mt-1">
-                Fill in the details below to{" "}
-                {editingId ? "update the event." : "create an event."}
-              </p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {totalAnnouncements}
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <FileText size={20} />
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={closeForm}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            >
-              <X size={21} />
-            </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="p-6 space-y-8">
-              {/* Event Information */}
-              <section>
-                <div className="flex items-center gap-2 mb-5">
-                  <FileText size={19} className="text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">
-                    Event Information
-                  </h3>
-                </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Published
+                </p>
 
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Title <span className="text-red-500">*</span>
-                    </label>
+                <p className="mt-2 text-2xl font-semibold text-emerald-600">
+                  {publishedAnnouncements}
+                </p>
+              </div>
 
-                    <input
-                      type="text"
-                      name="title"
-                      value={form.title}
-                      onChange={handleChange}
-                      placeholder="Enter event title"
-                      maxLength={100}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <textarea
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      placeholder="Describe the event, activities, and important information..."
-                      rows={5}
-                      maxLength={1000}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"
-                    />
-
-                    <p className="text-xs text-gray-400 mt-1 text-right">
-                      {form.description.length}/1000
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Schedule */}
-              <section>
-                <div className="flex items-center gap-2 mb-5">
-                  <CalendarDays size={19} className="text-blue-600" />
-
-                  <h3 className="font-semibold text-gray-900">
-                    Schedule
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Date{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <input
-                      type="date"
-                      name="eventDate"
-                      value={form.eventDate}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Registration Deadline
-                    </label>
-
-                    <input
-                      type="date"
-                      name="registrationDeadline"
-                      value={form.registrationDeadline}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <input
-                      type="time"
-                      name="startTime"
-                      value={form.startTime}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time
-                    </label>
-
-                    <input
-                      type="time"
-                      name="endTime"
-                      value={form.endTime}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Location & Capacity */}
-              <section>
-                <div className="flex items-center gap-2 mb-5">
-                  <MapPin size={19} className="text-blue-600" />
-
-                  <h3 className="font-semibold text-gray-900">
-                    Location & Capacity
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Venue <span className="text-red-500">*</span>
-                    </label>
-
-                    <input
-                      type="text"
-                      name="venue"
-                      value={form.venue}
-                      onChange={handleChange}
-                      placeholder="e.g. Main Auditorium"
-                      maxLength={150}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Participants
-                    </label>
-
-                    <div className="relative">
-                      <Users
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-
-                      <input
-                        type="number"
-                        name="maxParticipants"
-                        value={form.maxParticipants}
-                        onChange={handleChange}
-                        placeholder="e.g. 500"
-                        min="1"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Publishing */}
-              <section>
-                <div className="flex items-center gap-2 mb-5">
-                  <Clock3 size={19} className="text-blue-600" />
-
-                  <h3 className="font-semibold text-gray-900">
-                    Publishing
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Status{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      name="status"
-                      value={form.status}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
-                      <option value="DRAFT">Draft</option>
-                      <option value="PUBLISHED">Published</option>
-                      <option value="CANCELLED">Cancelled</option>
-                      <option value="COMPLETED">Completed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Image URL
-                    </label>
-
-                    <div className="relative">
-                      <Image
-                        size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-
-                      <input
-                        type="url"
-                        name="imageUrl"
-                        value={form.imageUrl}
-                        onChange={handleChange}
-                        placeholder="https://example.com/event-image.jpg"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <CheckCircle2 size={20} />
+              </div>
             </div>
+          </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeForm}
-                disabled={saving}
-                className="px-6 py-3 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Drafts
+                </p>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving
-                  ? "Saving..."
-                  : editingId
-                  ? "Update Event"
-                  : "Create Event"}
-              </button>
+                <p className="mt-2 text-2xl font-semibold text-amber-600">
+                  {draftAnnouncements}
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <Clock3 size={20} />
+              </div>
             </div>
-          </form>
+          </div>
         </div>
-      )}
 
-      {/* Events Table */}
-      {!showForm && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              All Events
-            </h2>
+        {/* ------------------------------------------------ */}
+        {/* Search */}
+        {/* ------------------------------------------------ */}
+        <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="relative max-w-md">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
 
-            <p className="text-sm text-gray-500 mt-1">
-              {events.length} event{events.length !== 1 ? "s" : ""}
-            </p>
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search announcements..."
+              className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+        </div>
+
+        {/* ------------------------------------------------ */}
+        {/* Table */}
+        {/* ------------------------------------------------ */}
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  All Announcements
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {filteredAnnouncements.length} announcement
+                  {filteredAnnouncements.length !== 1 ? "s" : ""} found
+                </p>
+              </div>
+            </div>
           </div>
 
           {loading ? (
-            <div className="p-10 text-center text-gray-500">
-              Loading events...
+            <div className="flex min-h-[280px] items-center justify-center">
+              <div className="flex items-center gap-3 text-sm text-slate-500">
+                <Loader2 size={20} className="animate-spin text-blue-600" />
+                Loading announcements...
+              </div>
             </div>
-          ) : events.length === 0 ? (
-            <div className="p-12 text-center">
-              <CalendarDays
-                size={45}
-                className="mx-auto text-gray-300 mb-3"
-              />
+          ) : filteredAnnouncements.length === 0 ? (
+            <div className="flex min-h-[280px] flex-col items-center justify-center px-6 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <Megaphone size={26} />
+              </div>
 
-              <h3 className="font-medium text-gray-700">
-                No events found
+              <h3 className="text-base font-semibold text-slate-900">
+                No announcements found
               </h3>
 
-              <p className="text-sm text-gray-500 mt-1">
-                Create your first event to get started.
+              <p className="mt-1 max-w-md text-sm text-slate-500">
+                {search
+                  ? "Try changing your search text."
+                  : "Create your first announcement to get started."}
               </p>
+
+              {!search && (
+                <button
+                  type="button"
+                  onClick={openCreateForm}
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                >
+                  <Plus size={17} />
+                  Create Announcement
+                </button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Event
+              <table className="min-w-full">
+                <thead className="bg-slate-50">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Announcement
                     </th>
 
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Date
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Message
                     </th>
 
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Venue
-                    </th>
-
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Status
                     </th>
 
-                    <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Created
+                    </th>
+
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Actions
                     </th>
                   </tr>
                 </thead>
 
-                <tbody>
-                  {events.map((event) => (
+                <tbody className="divide-y divide-slate-200">
+                  {filteredAnnouncements.map((announcement) => (
                     <tr
-                      key={event.id}
-                      className="border-b last:border-b-0 hover:bg-gray-50"
+                      key={announcement.id}
+                      className="transition hover:bg-slate-50"
                     >
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">
-                          {event.title}
-                        </p>
+                      {/* Title */}
+                      <td className="px-5 py-4 align-top">
+                        <div className="flex min-w-[220px] items-start gap-3">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <Megaphone size={17} />
+                          </div>
 
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                          {event.description}
-                        </p>
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {announcement.title || "-"}
+                            </p>
+                          </div>
+                        </div>
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {event.eventDate}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {event.venue}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            event.status === "PUBLISHED"
-                              ? "bg-green-100 text-green-700"
-                              : event.status === "CANCELLED"
-                              ? "bg-red-100 text-red-700"
-                              : event.status === "COMPLETED"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
+                      {/* Message */}
+                      <td className="max-w-md px-5 py-4 align-top">
+                        <p
+                          className="line-clamp-2 text-sm text-slate-600"
+                          title={announcement.message || ""}
                         >
-                          {event.status}
-                        </span>
+                          {announcement.message || "-"}
+                        </p>
                       </td>
 
-                      <td className="px-6 py-4">
+                      {/* Status */}
+                      <td className="px-5 py-4 align-top">
+                        {announcement.published ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            <CheckCircle2 size={14} />
+                            Published
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            <Clock3 size={14} />
+                            Draft
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Created */}
+                      <td className="whitespace-nowrap px-5 py-4 align-top text-sm text-slate-600">
+                        {formatDate(announcement.createdAt)}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-5 py-4 align-top">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => openEditForm(event)}
-                            className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                            title="Edit"
+                            onClick={() => openEditForm(announcement)}
+                            disabled={deletingId === announcement.id}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Edit announcement"
                           >
-                            <Pencil size={17} />
+                            <Pencil size={16} />
                           </button>
 
                           <button
                             type="button"
-                            onClick={() =>
-                              deleteEvent(event.id)
-                            }
-                            className="p-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
-                            title="Delete"
+                            onClick={() => handleDelete(announcement)}
+                            disabled={deletingId === announcement.id}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Delete announcement"
                           >
-                            <Trash2 size={17} />
+                            {deletingId === announcement.id ? (
+                              <Loader2
+                                size={16}
+                                className="animate-spin"
+                              />
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -654,9 +630,208 @@ function AdminEvents() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ================================================== */}
+      {/* CREATE / EDIT MODAL */}
+      {/* ================================================== */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                    <Megaphone size={20} />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      {editingAnnouncement
+                        ? "Edit Announcement"
+                        : "Create Announcement"}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      {editingAnnouncement
+                        ? "Update the announcement details."
+                        : "Enter the announcement details below."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeForm}
+                disabled={saving}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-6 px-6 py-6">
+                {/* Announcement Information */}
+                <div>
+                  <div className="mb-4 flex items-center gap-2">
+                    <FileText size={18} className="text-blue-600" />
+
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Announcement Information
+                    </h3>
+                  </div>
+
+                  <div className="space-y-5">
+                    {/* Title */}
+                    <div>
+                      <label
+                        htmlFor="announcement-title"
+                        className="mb-2 block text-sm font-medium text-slate-700"
+                      >
+                        Title <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        id="announcement-title"
+                        type="text"
+                        name="title"
+                        value={form.title}
+                        onChange={handleChange}
+                        maxLength={150}
+                        placeholder="Enter announcement title"
+                        disabled={saving}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+                      />
+
+                      <div className="mt-1.5 flex justify-end">
+                        <span className="text-xs text-slate-400">
+                          {form.title.length}/150
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Message */}
+                    <div>
+                      <label
+                        htmlFor="announcement-message"
+                        className="mb-2 block text-sm font-medium text-slate-700"
+                      >
+                        Message <span className="text-red-500">*</span>
+                      </label>
+
+                      <textarea
+                        id="announcement-message"
+                        name="message"
+                        value={form.message}
+                        onChange={handleChange}
+                        maxLength={MAX_MESSAGE_LENGTH}
+                        rows={7}
+                        placeholder="Enter the announcement message..."
+                        disabled={saving}
+                        className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+                      />
+
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <p className="text-xs text-slate-400">
+                          Keep the message clear and easy to understand.
+                        </p>
+
+                        <span
+                          className={`text-xs ${
+                            form.message.length >= MAX_MESSAGE_LENGTH
+                              ? "font-medium text-red-600"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {form.message.length}/{MAX_MESSAGE_LENGTH}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Publishing */}
+                <div className="border-t border-slate-200 pt-6">
+                  <div className="mb-4 flex items-center gap-2">
+                    <Megaphone size={18} className="text-blue-600" />
+
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Publishing
+                    </h3>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        name="published"
+                        checked={form.published}
+                        onChange={handleChange}
+                        disabled={saving}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+
+                      <span>
+                        <span className="block text-sm font-medium text-slate-800">
+                          Publish announcement
+                        </span>
+
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Published announcements can be displayed to
+                          students. Leave unchecked to save it as a draft.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  disabled={saving}
+                  className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={17} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      {editingAnnouncement ? (
+                        <Pencil size={17} />
+                      ) : (
+                        <Plus size={17} />
+                      )}
+
+                      {editingAnnouncement
+                        ? "Update Announcement"
+                        : "Create Announcement"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
-}
+};
 
-export default AdminEvents;
+export default AdminAnnouncements;
