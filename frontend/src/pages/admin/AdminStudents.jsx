@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import {
   Users,
   Search,
@@ -6,27 +7,43 @@ import {
   UserX,
   Mail,
   GraduationCap,
+  Eye,
+  X,
+  Loader2,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
 } from "lucide-react";
+
 import Swal from "sweetalert2";
+
 import { apiFetch } from "../../api/api";
+
 function AdminStudents() {
   const [students, setStudents] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
 
   const [updatingId, setUpdatingId] = useState(null);
 
+  // View drawer
+  const [viewStudent, setViewStudent] = useState(null);
+
+  /* =========================================================
+     LOAD STUDENTS
+  ========================================================= */
 
   const loadStudents = async () => {
     try {
-     setLoading(true);
+      setLoading(true);
+
       const data = await apiFetch("/admin/students");
 
       setStudents(Array.isArray(data) ? data : []);
-
     } catch (error) {
-
       console.error(
         "Failed to load students:",
         error
@@ -38,64 +55,71 @@ function AdminStudents() {
         text:
           error.message ||
           "Something went wrong.",
+        confirmButtonColor: "#0f766e",
       });
 
       setStudents([]);
-
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-
     loadStudents();
-
   }, []);
+
+  /* =========================================================
+     CHANGE STUDENT STATUS
+  ========================================================= */
 
   const changeStatus = async (student) => {
     const newStatus = !student.active;
+
     const actionText = newStatus
       ? "activate"
       : "deactivate";
+
     const result = await Swal.fire({
       title: newStatus
         ? "Activate Student?"
         : "Deactivate Student?",
+
       text: newStatus
         ? `${student.fullName} will be able to access the student system.`
         : `${student.fullName} will no longer be able to access the student system.`,
+
       icon: "warning",
+
       showCancelButton: true,
-      confirmButtonColor:
-        newStatus
-          ? "#16a34a"
-          : "#dc2626",
+
+      confirmButtonColor: newStatus
+        ? "#16a34a"
+        : "#dc2626",
 
       cancelButtonColor: "#6b7280",
-      confirmButtonText:
-        newStatus
-          ? "Yes, Activate"
-          : "Yes, Deactivate",
+
+      confirmButtonText: newStatus
+        ? "Yes, Activate"
+        : "Yes, Deactivate",
 
       cancelButtonText: "Cancel",
     });
-    if (!result.isConfirmed) {
 
+    if (!result.isConfirmed) {
       return;
     }
+
     try {
       setUpdatingId(student.id);
+
       await apiFetch(
-
         `/admin/students/${student.id}/status?active=${newStatus}`,
-
         {
           method: "PUT",
         }
       );
 
       await Swal.fire({
-
         icon: "success",
 
         title: newStatus
@@ -107,22 +131,27 @@ function AdminStudents() {
         showConfirmButton: false,
 
         timer: 1500,
-
       });
-
 
       await loadStudents();
 
-
+      // Update drawer if it is currently open
+      if (
+        viewStudent &&
+        viewStudent.id === student.id
+      ) {
+        setViewStudent({
+          ...student,
+          active: newStatus,
+        });
+      }
     } catch (error) {
-
       console.error(
         "Failed to change student status:",
         error
       );
 
       Swal.fire({
-
         icon: "error",
 
         title: "Unable to update status",
@@ -131,211 +160,1673 @@ function AdminStudents() {
           error.message ||
           "Something went wrong.",
 
+        confirmButtonColor: "#0f766e",
       });
-
     } finally {
-
       setUpdatingId(null);
-
     }
   };
 
-  const filteredStudents = students.filter(
-    (student) => {
+  /* =========================================================
+     SEARCH
+  ========================================================= */
 
-      const searchValue =
-        search.trim().toLowerCase();
+  const filteredStudents = useMemo(() => {
+    const searchValue =
+      search.trim().toLowerCase();
 
-      if (!searchValue) {
+    if (!searchValue) {
+      return students;
+    }
 
-        return true;
-
-      }
-
-
+    return students.filter((student) => {
       return (
-
         student.fullName
           ?.toLowerCase()
-          .includes(searchValue)
-
-        ||
+          .includes(searchValue) ||
 
         student.email
           ?.toLowerCase()
-          .includes(searchValue)
-
-        ||
+          .includes(searchValue) ||
 
         student.usn
           ?.toLowerCase()
-          .includes(searchValue)
-
-        ||
+          .includes(searchValue) ||
 
         student.department
           ?.toLowerCase()
           .includes(searchValue)
-
       );
+    });
+  }, [students, search]);
 
+  /* =========================================================
+     FORMAT YEAR
+  ========================================================= */
+
+  const formatYear = (year) => {
+    if (!year) {
+      return "—";
     }
-  );
-  return (
 
+    return `Year ${year}`;
+  };
+
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
+  return (
     <div className="max-w-7xl mx-auto">
-      <div className="
-        flex
-        flex-col
-        lg:flex-row
-        lg:items-center
-        lg:justify-between
-        gap-4
-        mb-8
-      ">
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
+      <div
+        className="
+          flex
+          flex-col
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          gap-4
+          mb-6
+        "
+      >
         <div>
-          <h1 className="
-            text-3xl
-            font-bold
-            text-gray-900
-          ">
-            Students
-          </h1>
-          <p className="
-            text-gray-500
-            mt-1
-          ">
-            Manage registered students and their access.
-          </p>
-        </div>
-        <div className="
-          inline-flex
-          items-center
-          gap-3
-          bg-white
-          border
-          border-gray-200
-          rounded-lg
-          px-4
-          py-3
-          shadow-sm
-        ">
-          <div className="
-            p-2
-            bg-blue-50
-            rounded-lg
-          ">
-            <Users
-              size={20}
-              className="text-blue-600"
-            />
-          </div>
-          <div>
-            <p className="
-              text-xs
-              text-gray-500
-            ">
-              Total Students
-            </p>
-            <p className="
-              text-lg
+          <h1
+            className="
+              text-2xl
               font-semibold
               text-gray-900
-            ">
+            "
+          >
+            Students
+          </h1>
+        </div>
+
+        {/* Total students */}
+
+        <div
+          className="
+            inline-flex
+            items-center
+            gap-3
+            border
+            border-gray-300
+            bg-white
+            rounded-md
+            px-4
+            py-2.5
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              justify-center
+              w-8
+              h-8
+              rounded-md
+              bg-teal-50
+              text-teal-700
+            "
+          >
+            <Users size={18} />
+          </div>
+
+          <div>
+            <p
+              className="
+                text-xs
+                text-gray-500
+              "
+            >
+              Total Students
+            </p>
+
+            <p
+              className="
+                text-sm
+                font-semibold
+                text-gray-900
+              "
+            >
               {students.length}
             </p>
           </div>
         </div>
       </div>
-      <div className="
-        bg-white
-        border
-        border-gray-200
-        rounded-xl
-        shadow-sm
-        overflow-hidden
-      ">
-        <div className="
-          px-6
-          py-5
-          border-b
-          border-gray-200
-        ">
-          <div className="
-            flex
-            flex-col
-            lg:flex-row
-            lg:items-center
-            lg:justify-between
-            gap-4
-          ">
-            <div>
 
-              <h2 className="
-                text-lg
-                font-semibold
-                text-gray-900
-              ">
-                Registered Students
-              </h2>
-              <p className="
+
+      {/* =====================================================
+          SEARCH
+      ===================================================== */}
+
+      <div className="mb-4">
+
+        <div
+          className="
+            relative
+            w-full
+            sm:w-[430px]
+          "
+        >
+          <Search
+            size={18}
+            className="
+              absolute
+              left-3
+              top-1/2
+              -translate-y-1/2
+              text-gray-500
+            "
+          />
+
+          <input
+            type="text"
+            value={search}
+            onChange={(event) =>
+              setSearch(event.target.value)
+            }
+            placeholder="Search students"
+            className="
+              w-full
+              h-11
+              pl-10
+              pr-4
+              border
+              border-gray-400
+              rounded-md
+              bg-white
+              text-sm
+              text-gray-800
+              placeholder:text-gray-500
+              outline-none
+              focus:border-teal-600
+              focus:ring-1
+              focus:ring-teal-600
+            "
+          />
+        </div>
+
+      </div>
+
+
+      {/* =====================================================
+          TABLE
+      ===================================================== */}
+
+      <div
+        className="
+          bg-white
+          border
+          border-gray-400
+          rounded-lg
+          overflow-hidden
+        "
+      >
+
+        {/* LOADING */}
+
+        {loading ? (
+
+          <div
+            className="
+              min-h-[300px]
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-3
                 text-sm
                 text-gray-500
-                mt-1
-              ">
-                {filteredStudents.length} student
-                {filteredStudents.length !== 1
-                  ? "s"
-                  : ""}
-
-                {search
-                  ? " found"
-                  : ""}
-              </p>
-            </div>
-            <div className="relative">
-
-              <Search
-                size={18}
+              "
+            >
+              <Loader2
+                size={20}
                 className="
-                  absolute
-                  left-3
-                  top-1/2
-                  -translate-y-1/2
-                  text-gray-400
+                  animate-spin
+                  text-teal-700
                 "
               />
 
+              Loading students...
+            </div>
+          </div>
 
-              <input
+        ) : filteredStudents.length === 0 ? (
 
-                type="text"
+          /* EMPTY STATE */
 
-                value={search}
+          <div
+            className="
+              min-h-[300px]
+              flex
+              flex-col
+              items-center
+              justify-center
+              px-6
+              text-center
+            "
+          >
+            <div
+              className="
+                w-14
+                h-14
+                rounded-full
+                bg-gray-100
+                flex
+                items-center
+                justify-center
+                text-gray-400
+                mb-4
+              "
+            >
+              <Users size={26} />
+            </div>
 
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
+            <h3
+              className="
+                text-base
+                font-semibold
+                text-gray-900
+              "
+            >
+              No students found
+            </h3>
 
-                placeholder="Search students..."
+            <p
+              className="
+                mt-1
+                text-sm
+                text-gray-500
+              "
+            >
+              {search
+                ? "Try changing your search."
+                : "There are no registered students yet."}
+            </p>
+          </div>
 
+        ) : (
+
+          <>
+            {/* =================================================
+                TABLE
+            ================================================= */}
+
+            <div className="overflow-x-auto">
+
+              <table
                 className="
                   w-full
-                  sm:w-80
-                  pl-10
+                  border-collapse
+                "
+              >
+
+                <thead>
+
+                  <tr
+                    className="
+                      bg-white
+                      border-b
+                      border-gray-400
+                    "
+                  >
+
+                    {/* STUDENT */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                        "
+                      >
+                        Student
+
+                        <span className="text-gray-400">
+                          ↕
+                        </span>
+                      </div>
+                    </th>
+
+
+                    {/* USN */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                        "
+                      >
+                        USN
+
+                        <span className="text-gray-400">
+                          ↕
+                        </span>
+                      </div>
+                    </th>
+
+
+                    {/* DEPARTMENT */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                        "
+                      >
+                        Department
+
+                        <span className="text-gray-400">
+                          ↕
+                        </span>
+                      </div>
+                    </th>
+
+
+                    {/* YEAR */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                        "
+                      >
+                        Year
+
+                        <span className="text-gray-400">
+                          ↕
+                        </span>
+                      </div>
+                    </th>
+
+
+                    {/* STATUS */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                        "
+                      >
+                        Status
+
+                        <span className="text-gray-400">
+                          ↕
+                        </span>
+                      </div>
+                    </th>
+
+
+                    {/* ACTIONS */}
+
+                    <th
+                      className="
+                        px-5
+                        py-3.5
+                        text-right
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      "
+                    >
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {filteredStudents.map(
+                    (student) => (
+
+                      <tr
+                        key={student.id}
+                        className="
+                          border-b
+                          border-gray-300
+                          last:border-b-0
+                          hover:bg-gray-50
+                          transition
+                        "
+                      >
+
+                        {/* =================================================
+                            STUDENT
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                          "
+                        >
+
+                          <div
+                            className="
+                              flex
+                              items-center
+                              gap-3
+                              min-w-[240px]
+                            "
+                          >
+
+                            {/* Avatar */}
+
+                            <div
+                              className="
+                                w-10
+                                h-10
+                                rounded-full
+                                bg-teal-50
+                                text-teal-700
+                                flex
+                                items-center
+                                justify-center
+                                font-semibold
+                                shrink-0
+                              "
+                            >
+                              {student.fullName
+                                ?.charAt(0)
+                                ?.toUpperCase() ||
+                                "S"}
+                            </div>
+
+
+                            {/* Name + Email */}
+
+                            <div className="min-w-0">
+
+                              <p
+                                className="
+                                  text-sm
+                                  font-semibold
+                                  text-gray-900
+                                  truncate
+                                "
+                              >
+                                {student.fullName ||
+                                  "—"}
+                              </p>
+
+                              <div
+                                className="
+                                  flex
+                                  items-center
+                                  gap-1.5
+                                  mt-1
+                                  text-xs
+                                  text-gray-500
+                                "
+                              >
+                                <Mail size={13} />
+
+                                <span
+                                  className="
+                                    truncate
+                                  "
+                                >
+                                  {student.email ||
+                                    "—"}
+                                </span>
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        </td>
+
+
+                        {/* =================================================
+                            USN
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                            text-sm
+                            font-medium
+                            text-gray-800
+                            whitespace-nowrap
+                          "
+                        >
+                          {student.usn || "—"}
+                        </td>
+
+
+                        {/* =================================================
+                            DEPARTMENT
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                            text-sm
+                            text-gray-700
+                            whitespace-nowrap
+                          "
+                        >
+                          {student.department || "—"}
+                        </td>
+
+
+                        {/* =================================================
+                            YEAR
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                          "
+                        >
+
+                          <div
+                            className="
+                              inline-flex
+                              items-center
+                              gap-2
+                              text-sm
+                              text-gray-700
+                              whitespace-nowrap
+                            "
+                          >
+                            <GraduationCap
+                              size={16}
+                              className="text-gray-400"
+                            />
+
+                            {formatYear(
+                              student.year
+                            )}
+                          </div>
+
+                        </td>
+
+
+                        {/* =================================================
+                            STATUS
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                          "
+                        >
+
+                          {student.active ? (
+
+                            <span
+                              className="
+                                inline-flex
+                                items-center
+                                gap-1.5
+                                rounded-full
+                                bg-green-100
+                                px-3
+                                py-1
+                                text-xs
+                                font-medium
+                                text-green-700
+                              "
+                            >
+                              <UserCheck size={13} />
+
+                              Active
+                            </span>
+
+                          ) : (
+
+                            <span
+                              className="
+                                inline-flex
+                                items-center
+                                gap-1.5
+                                rounded-full
+                                bg-red-100
+                                px-3
+                                py-1
+                                text-xs
+                                font-medium
+                                text-red-700
+                              "
+                            >
+                              <UserX size={13} />
+
+                              Inactive
+                            </span>
+
+                          )}
+
+                        </td>
+
+
+                        {/* =================================================
+                            ACTIONS
+                        ================================================= */}
+
+                        <td
+                          className="
+                            px-5
+                            py-4
+                          "
+                        >
+
+                          <div
+                            className="
+                              flex
+                              items-center
+                              justify-end
+                              gap-2
+                            "
+                          >
+
+                            {/* VIEW */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewStudent(
+                                  student
+                                )
+                              }
+                              className="
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-gray-400
+                                rounded-md
+                                bg-white
+                                text-gray-600
+                                hover:bg-gray-100
+                                hover:text-gray-900
+                                transition
+                              "
+                              title="View student"
+                            >
+                              <Eye size={17} />
+                            </button>
+
+
+                            {/* ACTIVATE / DEACTIVATE */}
+
+                            <button
+                              type="button"
+                              disabled={
+                                updatingId ===
+                                student.id
+                              }
+                              onClick={() =>
+                                changeStatus(
+                                  student
+                                )
+                              }
+                              className={`
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                gap-2
+                                px-3
+                                rounded-md
+                                text-xs
+                                font-medium
+                                transition
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
+
+                                ${
+                                  student.active
+                                    ? "border border-red-500 bg-red-600 text-white hover:bg-red-700"
+                                    : "border border-green-500 bg-green-600 text-white hover:bg-green-700"
+                                }
+                              `}
+                              title={
+                                student.active
+                                  ? "Deactivate student"
+                                  : "Activate student"
+                              }
+                            >
+
+                              {updatingId ===
+                              student.id ? (
+
+                                <Loader2
+                                  size={15}
+                                  className="
+                                    animate-spin
+                                  "
+                                />
+
+                              ) : student.active ? (
+
+                                <UserX size={15} />
+
+                              ) : (
+
+                                <UserCheck size={15} />
+
+                              )}
+
+                              {student.active
+                                ? "Deactivate"
+                                : "Activate"}
+
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+
+                    )
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+            {/* =================================================
+                PAGINATION FOOTER
+            ================================================= */}
+
+            <div
+              className="
+                px-5
+                py-4
+                border-t
+                border-gray-300
+                flex
+                flex-col
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+                gap-4
+              "
+            >
+
+              {/* COUNT */}
+
+              <div
+                className="
+                  text-sm
+                  text-gray-600
+                "
+              >
+                1-{filteredStudents.length} of{" "}
+                {filteredStudents.length}
+              </div>
+
+
+              {/* PAGINATION */}
+
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-4
+                "
+              >
+
+                {/* ROWS */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-2
+                  "
+                >
+
+                  <span
+                    className="
+                      text-sm
+                      text-gray-600
+                      whitespace-nowrap
+                    "
+                  >
+                    Rows per page
+                  </span>
+
+                  <select
+                    value="10"
+                    disabled
+                    className="
+                      h-9
+                      px-2
+                      border
+                      border-gray-400
+                      rounded-md
+                      bg-white
+                      text-sm
+                      text-gray-700
+                    "
+                  >
+                    <option value="10">
+                      10
+                    </option>
+                  </select>
+
+                </div>
+
+
+                {/* BUTTONS */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-1
+                  "
+                >
+
+                  <button
+                    type="button"
+                    disabled
+                    className="
+                      w-9
+                      h-9
+                      flex
+                      items-center
+                      justify-center
+                      border
+                      border-gray-400
+                      rounded-md
+                      bg-white
+                      text-gray-400
+                    "
+                  >
+                    <ChevronsLeft size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="
+                      w-9
+                      h-9
+                      flex
+                      items-center
+                      justify-center
+                      border
+                      border-gray-400
+                      rounded-md
+                      bg-white
+                      text-gray-400
+                    "
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="
+                      w-9
+                      h-9
+                      flex
+                      items-center
+                      justify-center
+                      rounded-md
+                      bg-teal-700
+                      text-white
+                      text-sm
+                      font-semibold
+                    "
+                  >
+                    1
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="
+                      w-9
+                      h-9
+                      flex
+                      items-center
+                      justify-center
+                      border
+                      border-gray-400
+                      rounded-md
+                      bg-white
+                      text-gray-400
+                    "
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="
+                      w-9
+                      h-9
+                      flex
+                      items-center
+                      justify-center
+                      border
+                      border-gray-400
+                      rounded-md
+                      bg-white
+                      text-gray-400
+                    "
+                  >
+                    <ChevronsRight size={16} />
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </>
+
+        )}
+
+      </div>
+
+
+      {/* =====================================================
+          VIEW STUDENT - RIGHT SIDE DRAWER
+      ===================================================== */}
+
+      {viewStudent && (
+
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+          "
+        >
+
+          {/* OVERLAY */}
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-black/50
+              backdrop-blur-[2px]
+            "
+            onClick={() =>
+              setViewStudent(null)
+            }
+          />
+
+
+          {/* DRAWER */}
+
+          <div
+            className="
+              absolute
+              top-0
+              right-0
+              h-full
+              w-full
+              sm:w-[520px]
+              lg:w-[620px]
+              bg-white
+              shadow-2xl
+              flex
+              flex-col
+            "
+          >
+
+            {/* =================================================
+                DRAWER HEADER
+            ================================================= */}
+
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                px-6
+                py-5
+                border-b
+                border-gray-300
+                shrink-0
+              "
+            >
+
+              <h2
+                className="
+                  text-xl
+                  font-semibold
+                  text-gray-900
+                  truncate
                   pr-4
+                "
+              >
+                {viewStudent.fullName ||
+                  "Student Details"}
+              </h2>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewStudent(null)
+                }
+                className="
+                  w-10
+                  h-10
+                  rounded-full
+                  border
+                  border-gray-400
+                  flex
+                  items-center
+                  justify-center
+                  text-gray-600
+                  hover:bg-gray-100
+                  hover:text-gray-900
+                  transition
+                  shrink-0
+                "
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+
+            {/* =================================================
+                DRAWER CONTENT
+            ================================================= */}
+
+            <div
+              className="
+                flex-1
+                overflow-y-auto
+                px-6
+                py-6
+              "
+            >
+
+              <div className="space-y-6">
+
+                {/* STUDENT */}
+
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-4
+                    pb-5
+                    border-b
+                    border-gray-200
+                  "
+                >
+
+                  <div
+                    className="
+                      w-14
+                      h-14
+                      rounded-full
+                      bg-teal-50
+                      text-teal-700
+                      flex
+                      items-center
+                      justify-center
+                      text-lg
+                      font-semibold
+                      shrink-0
+                    "
+                  >
+                    {viewStudent.fullName
+                      ?.charAt(0)
+                      ?.toUpperCase() ||
+                      "S"}
+                  </div>
+
+                  <div>
+                    <h3
+                      className="
+                        text-lg
+                        font-semibold
+                        text-gray-900
+                      "
+                    >
+                      {viewStudent.fullName ||
+                        "—"}
+                    </h3>
+
+                    <p
+                      className="
+                        mt-1
+                        text-sm
+                        text-gray-500
+                      "
+                    >
+                      {viewStudent.email ||
+                        "—"}
+                    </p>
+                  </div>
+
+                </div>
+
+
+                {/* FULL NAME */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Full Name
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      font-semibold
+                      text-gray-900
+                    "
+                  >
+                    {viewStudent.fullName ||
+                      "—"}
+                  </p>
+
+                </div>
+
+
+                {/* EMAIL */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Email
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      text-gray-900
+                      break-all
+                    "
+                  >
+                    {viewStudent.email ||
+                      "—"}
+                  </p>
+
+                </div>
+
+
+                {/* USN */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    USN
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-900
+                    "
+                  >
+                    {viewStudent.usn ||
+                      "—"}
+                  </p>
+
+                </div>
+
+
+                {/* YEAR */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Year
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      text-gray-900
+                    "
+                  >
+                    {formatYear(
+                      viewStudent.year
+                    )}
+                  </p>
+
+                </div>
+
+
+                {/* DEPARTMENT */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Department
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      text-gray-900
+                    "
+                  >
+                    {viewStudent.department ||
+                      "—"}
+                  </p>
+
+                </div>
+
+
+                {/* STATUS */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Status
+                  </p>
+
+                  <div>
+
+                    {viewStudent.active ? (
+
+                      <span
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          rounded-full
+                          bg-green-100
+                          px-3
+                          py-1
+                          text-xs
+                          font-medium
+                          text-green-700
+                        "
+                      >
+                        <UserCheck size={13} />
+
+                        Active
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className="
+                          inline-flex
+                          items-center
+                          gap-1.5
+                          rounded-full
+                          bg-red-100
+                          px-3
+                          py-1
+                          text-xs
+                          font-medium
+                          text-red-700
+                        "
+                      >
+                        <UserX size={13} />
+
+                        Inactive
+                      </span>
+
+                    )}
+
+                  </div>
+
+                </div>
+
+
+                {/* ROLE */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Role
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      text-gray-900
+                    "
+                  >
+                    {viewStudent.role ||
+                      "STUDENT"}
+                  </p>
+
+                </div>
+
+
+                {/* ID */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-[150px_1fr]
+                    gap-1
+                    sm:gap-6
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-medium
+                      text-gray-600
+                    "
+                  >
+                    Student ID
+                  </p>
+
+                  <p
+                    className="
+                      text-sm
+                      text-gray-900
+                    "
+                  >
+                    {viewStudent.id ||
+                      "—"}
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* =================================================
+                DRAWER FOOTER
+            ================================================= */}
+
+            <div
+              className="
+                px-6
+                py-4
+                border-t
+                border-gray-300
+                bg-white
+                shrink-0
+                flex
+                flex-col-reverse
+                sm:flex-row
+                sm:justify-end
+                gap-3
+              "
+            >
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewStudent(null)
+                }
+                className="
+                  px-5
                   py-2.5
                   border
-                  border-gray-300
-                  rounded-lg
+                  border-gray-400
+                  rounded-md
                   bg-white
-                  focus:ring-2
-                  focus:ring-blue-500
-                  focus:border-blue-500
-                  outline-none
+                  text-sm
+                  font-medium
+                  text-gray-700
+                  hover:bg-gray-100
                   transition
                 "
-              />
+              >
+                Close
+              </button>
+
+
+              <button
+                type="button"
+                disabled={
+                  updatingId ===
+                  viewStudent.id
+                }
+                onClick={() =>
+                  changeStatus(viewStudent)
+                }
+                className={`
+                  px-5
+                  py-2.5
+                  rounded-md
+                  text-sm
+                  font-medium
+                  text-white
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  transition
+                  disabled:opacity-50
+
+                  ${
+                    viewStudent.active
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  }
+                `}
+              >
+
+                {updatingId ===
+                viewStudent.id ? (
+
+                  <Loader2
+                    size={16}
+                    className="animate-spin"
+                  />
+
+                ) : viewStudent.active ? (
+
+                  <UserX size={16} />
+
+                ) : (
+
+                  <UserCheck size={16} />
+
+                )}
+
+                {viewStudent.active
+                  ? "Deactivate"
+                  : "Activate"}
+
+              </button>
 
             </div>
 
@@ -343,453 +1834,8 @@ function AdminStudents() {
 
         </div>
 
+      )}
 
-        {/* ===================================================
-            LOADING
-        =================================================== */}
-
-        {loading ? (
-
-          <div className="
-            p-12
-            text-center
-          ">
-
-            <div className="
-              inline-flex
-              items-center
-              gap-2
-              text-gray-500
-            ">
-
-              <div className="
-                w-5
-                h-5
-                border-2
-                border-gray-300
-                border-t-blue-600
-                rounded-full
-                animate-spin
-              " />
-
-              Loading students...
-
-            </div>
-
-          </div>
-
-
-        ) : filteredStudents.length === 0 ? (
-
-
-          /* =================================================
-             EMPTY STATE
-          ================================================= */
-
-          <div className="
-            p-12
-            text-center
-          ">
-
-            <Users
-              size={48}
-              className="
-                mx-auto
-                text-gray-300
-                mb-4
-              "
-            />
-
-
-            <h3 className="
-              font-medium
-              text-gray-700
-            ">
-
-              No students found
-
-            </h3>
-
-
-            <p className="
-              text-sm
-              text-gray-500
-              mt-1
-            ">
-
-              {search
-
-                ? "Try changing your search."
-
-                : "There are no registered students yet."}
-
-            </p>
-
-          </div>
-
-
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-
-
-              <thead className="
-                bg-gray-50
-                border-b
-              ">
-
-                <tr>
-
-
-                  <th className="
-                    text-left
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    Student
-                  </th>
-
-
-                  <th className="
-                    text-left
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    USN
-                  </th>
-
-
-                  <th className="
-                    text-left
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    Department
-                  </th>
-
-
-                  <th className="
-                    text-left
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    Year
-                  </th>
-
-
-                  <th className="
-                    text-left
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    Status
-                  </th>
-
-
-                  <th className="
-                    text-right
-                    px-6
-                    py-4
-                    text-sm
-                    font-semibold
-                    text-gray-600
-                  ">
-                    Action
-                  </th>
-
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {filteredStudents.map(
-                  (student) => (
-
-                    <tr
-
-                      key={student.id}
-
-                      className="
-                        border-b
-                        last:border-b-0
-                        hover:bg-gray-50
-                        transition
-                      "
-                    >
-
-
-                      {/* =================================================
-                          STUDENT
-                      ================================================= */}
-
-                      <td className="px-6 py-4">
-
-                        <div className="
-                          flex
-                          items-center
-                          gap-3
-                        ">
-
-
-                          {/* Avatar */}
-
-                          <div className="
-                            w-10
-                            h-10
-                            rounded-full
-                            bg-blue-50
-                            text-blue-600
-                            flex
-                            items-center
-                            justify-center
-                            font-semibold
-                            shrink-0
-                          ">
-
-                            {student.fullName
-                              ?.charAt(0)
-                              ?.toUpperCase() || "S"}
-
-                          </div>
-
-
-                          <div className="min-w-0">
-
-                            <p className="
-                              font-medium
-                              text-gray-900
-                              truncate
-                            ">
-
-                              {student.fullName}
-
-                            </p>
-
-
-                            <div className="
-                              flex
-                              items-center
-                              gap-1.5
-                              mt-1
-                              text-sm
-                              text-gray-500
-                            ">
-
-                              <Mail size={13} />
-
-                              <span className="truncate">
-
-                                {student.email}
-
-                              </span>
-
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-
-                      {/* =================================================
-                          USN
-                      ================================================= */}
-
-                      <td className="
-                        px-6
-                        py-4
-                        text-sm
-                        font-medium
-                        text-gray-700
-                        whitespace-nowrap
-                      ">
-
-                        {student.usn || "—"}
-
-                      </td>
-
-
-                      {/* =================================================
-                          DEPARTMENT
-                      ================================================= */}
-
-                      <td className="
-                        px-6
-                        py-4
-                        text-sm
-                        text-gray-600
-                      ">
-
-                        {student.department || "—"}
-
-                      </td>
-
-
-                      {/* =================================================
-                          YEAR
-                      ================================================= */}
-
-                      <td className="px-6 py-4">
-
-                        <div className="
-                          inline-flex
-                          items-center
-                          gap-2
-                          text-sm
-                          text-gray-600
-                        ">
-
-                          <GraduationCap
-                            size={16}
-                            className="text-gray-400"
-                          />
-
-                          {student.year
-                            ? `Year ${student.year}`
-                            : "—"}
-
-                        </div>
-
-                      </td>
-
-
-                      {/* =================================================
-                          STATUS
-                      ================================================= */}
-
-                      <td className="px-6 py-4">
-
-                        <span className={`
-                          inline-flex
-                          items-center
-                          gap-1.5
-                          px-3
-                          py-1
-                          rounded-full
-                          text-xs
-                          font-medium
-
-                          ${
-                            student.active
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }
-                        `}>
-
-                          {student.active ? (
-
-                            <UserCheck size={14} />
-
-                          ) : (
-
-                            <UserX size={14} />
-
-                          )}
-
-
-                          {student.active
-                            ? "Active"
-                            : "Inactive"}
-                        </span>
-                      </td>
-
-
-                      {/* =================================================
-                          ACTION
-                      ================================================= */}
-
-                      <td className="
-                        px-6
-                        py-4
-                        text-right
-                      ">
-
-                        <button
-                          type="button"
-                          disabled={
-                            updatingId === student.id
-                          }
-                          onClick={() =>
-                            changeStatus(student)
-                          }
-
-                          className={`
-                            inline-flex
-                            items-center
-                            justify-center
-                            gap-2
-                            px-4
-                            py-2
-                            rounded-lg
-                            text-sm
-                            font-medium
-                            transition
-                            disabled:opacity-50
-                            disabled:cursor-not-allowed
-
-                            ${
-                              student.active
-
-                                ? "bg-red-50 text-red-700 hover:bg-red-100"
-
-                                : "bg-green-50 text-green-700 hover:bg-green-100"
-                            }
-                          `}
-                        >
-                          {updatingId ===
-                          student.id ? (
-                            <>
-                              <div className="
-                                w-4
-                                h-4
-                                border-2
-                                border-current
-                                border-t-transparent
-                                rounded-full
-                                animate-spin
-                              " />
-                              Updating...
-                            </>
-                          ) : (
-                            <>
-                              {student.active ? (
-                                <UserX size={16} />
-                              ) : (
-                                <UserCheck size={16} />
-                              )}
-                              {student.active
-                                ? "Deactivate"
-                                : "Activate"}
-                            </>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-
-                  )
-                )}
-
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

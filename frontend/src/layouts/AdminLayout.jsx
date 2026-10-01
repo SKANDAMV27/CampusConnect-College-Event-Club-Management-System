@@ -80,11 +80,11 @@ function AdminLayout() {
       path: "/admin/announcements",
       icon: Megaphone,
     },
-    {
-      name: "Profile",
-      path: "/admin/profile",
-      icon: UserCircle,
-    },
+//     {
+//       name: "Profile",
+//       path: "/admin/profile",
+//       icon: UserCircle,
+//     },
   ];
 
   const closeMobileMenu = () => {

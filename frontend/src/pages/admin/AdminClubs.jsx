@@ -6,17 +6,20 @@ import {
   Trash2,
   X,
   Users,
-  FileText,
   Mail,
   Phone,
   UserRound,
   Search,
+  Eye,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
 } from "lucide-react";
 
 import Swal from "sweetalert2";
 
 import { apiFetch } from "../../api/api";
-
 
 /* =========================================================
    EMPTY FORM
@@ -31,13 +34,11 @@ const emptyForm = {
   active: true,
 };
 
-
 /* =========================================================
    COMPONENT
 ========================================================= */
 
 function AdminClubs() {
-
   const [clubs, setClubs] = useState([]);
 
   const [form, setForm] = useState(emptyForm);
@@ -52,23 +53,21 @@ function AdminClubs() {
 
   const [search, setSearch] = useState("");
 
+  // View drawer
+  const [viewClub, setViewClub] = useState(null);
 
   /* =========================================================
      LOAD CLUBS
   ========================================================= */
 
   const loadClubs = async () => {
-
     try {
-
       setLoading(true);
 
       const data = await apiFetch("/admin/clubs");
 
       setClubs(Array.isArray(data) ? data : []);
-
     } catch (error) {
-
       console.error("Failed to load clubs:", error);
 
       Swal.fire({
@@ -78,28 +77,20 @@ function AdminClubs() {
       });
 
       setClubs([]);
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
-
   useEffect(() => {
-
     loadClubs();
-
   }, []);
-
 
   /* =========================================================
      FORM CHANGE
   ========================================================= */
 
   const handleChange = (e) => {
-
     const {
       name,
       value,
@@ -107,99 +98,70 @@ function AdminClubs() {
       checked,
     } = e.target;
 
-
     setForm((previous) => ({
-
       ...previous,
-
       [name]:
         type === "checkbox"
           ? checked
           : value,
-
     }));
   };
-
 
   /* =========================================================
      OPEN CREATE FORM
   ========================================================= */
 
   const openCreateForm = () => {
-
     setForm(emptyForm);
-
     setEditingId(null);
-
     setShowForm(true);
-
   };
-
 
   /* =========================================================
      EDIT CLUB
   ========================================================= */
 
   const editClub = (club) => {
-
     setEditingId(club.id);
 
     setForm({
-
       name: club.name || "",
-
-      description:
-        club.description || "",
-
+      description: club.description || "",
       facultyCoordinator:
         club.facultyCoordinator || "",
-
       contactEmail:
         club.contactEmail || "",
-
       contactPhone:
         club.contactPhone || "",
-
       active:
         club.active ?? true,
-
     });
 
     setShowForm(true);
-
   };
-
 
   /* =========================================================
      RESET FORM
   ========================================================= */
 
   const resetForm = () => {
-
     setForm(emptyForm);
-
     setEditingId(null);
-
     setShowForm(false);
-
   };
-
 
   /* =========================================================
      SUBMIT FORM
   ========================================================= */
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
 
     /* -------------------------------------------------------
        BASIC VALIDATION
     ------------------------------------------------------- */
 
     if (!form.name.trim()) {
-
       Swal.fire({
         icon: "warning",
         title: "Club Name Required",
@@ -209,14 +171,10 @@ function AdminClubs() {
       return;
     }
 
-
     try {
-
       setSaving(true);
 
-
       const payload = {
-
         name: form.name.trim(),
 
         description:
@@ -233,16 +191,13 @@ function AdminClubs() {
 
         active:
           form.active,
-
       };
-
 
       /* -------------------------------------------------------
          UPDATE
       ------------------------------------------------------- */
 
       if (editingId) {
-
         await apiFetch(
           `/admin/clubs/${editingId}`,
           {
@@ -250,16 +205,13 @@ function AdminClubs() {
             body: JSON.stringify(payload),
           }
         );
-
       }
-
 
       /* -------------------------------------------------------
          CREATE
       ------------------------------------------------------- */
 
       else {
-
         await apiFetch(
           "/admin/clubs",
           {
@@ -267,16 +219,13 @@ function AdminClubs() {
             body: JSON.stringify(payload),
           }
         );
-
       }
-
 
       /* -------------------------------------------------------
          SUCCESS
       ------------------------------------------------------- */
 
       await Swal.fire({
-
         icon: "success",
 
         title: editingId
@@ -286,24 +235,19 @@ function AdminClubs() {
         showConfirmButton: false,
 
         timer: 1500,
-
       });
-
 
       resetForm();
 
       await loadClubs();
 
-
     } catch (error) {
-
       console.error(
         "Unable to save club:",
         error
       );
 
       Swal.fire({
-
         icon: "error",
 
         title: "Unable to save club",
@@ -311,25 +255,18 @@ function AdminClubs() {
         text:
           error.message ||
           "Something went wrong while saving the club.",
-
       });
-
     } finally {
-
       setSaving(false);
-
     }
   };
-
 
   /* =========================================================
      DELETE CLUB
   ========================================================= */
 
   const deleteClub = async (id) => {
-
     const result = await Swal.fire({
-
       title: "Delete Club?",
 
       text: "This action cannot be undone.",
@@ -345,19 +282,13 @@ function AdminClubs() {
       confirmButtonText: "Yes, Delete",
 
       cancelButtonText: "Cancel",
-
     });
 
-
     if (!result.isConfirmed) {
-
       return;
-
     }
 
-
     try {
-
       await apiFetch(
         `/admin/clubs/${id}`,
         {
@@ -365,9 +296,7 @@ function AdminClubs() {
         }
       );
 
-
       await Swal.fire({
-
         icon: "success",
 
         title: "Club Deleted",
@@ -375,17 +304,12 @@ function AdminClubs() {
         showConfirmButton: false,
 
         timer: 1200,
-
       });
-
 
       await loadClubs();
 
-
     } catch (error) {
-
       Swal.fire({
-
         icon: "error",
 
         title: "Unable to delete club",
@@ -393,19 +317,15 @@ function AdminClubs() {
         text:
           error.message ||
           "Something went wrong.",
-
       });
-
     }
   };
-
 
   /* =========================================================
      SEARCH
   ========================================================= */
 
   const filteredClubs = clubs.filter((club) => {
-
     const searchValue =
       search.trim().toLowerCase();
 
@@ -414,7 +334,6 @@ function AdminClubs() {
     }
 
     return (
-
       club.name
         ?.toLowerCase()
         .includes(searchValue)
@@ -431,19 +350,26 @@ function AdminClubs() {
         ?.toLowerCase()
         .includes(searchValue)
 
+      ||
+
+      club.contactPhone
+        ?.toLowerCase()
+        .includes(searchValue)
+
+      ||
+
+      club.description
+        ?.toLowerCase()
+        .includes(searchValue)
     );
-
   });
-
 
   /* =========================================================
      UI
   ========================================================= */
 
   return (
-
     <div className="max-w-7xl mx-auto">
-
 
       {/* =====================================================
           PAGE HEADER
@@ -456,61 +382,44 @@ function AdminClubs() {
         sm:items-center
         sm:justify-between
         gap-4
-        mb-8
+        mb-6
       ">
-
 
         <div>
 
           <h1 className="
-            text-3xl
-            font-bold
+            text-2xl
+            font-semibold
             text-gray-900
           ">
             Clubs
           </h1>
 
-
-          <p className="
-            text-gray-500
-            mt-1
-          ">
-            Create and manage college clubs.
-          </p>
-
         </div>
 
-
         {!showForm && (
-
           <button
-
             type="button"
-
             onClick={openCreateForm}
-
             className="
               inline-flex
               items-center
               justify-center
               gap-2
-              bg-blue-600
-              hover:bg-blue-700
+              bg-teal-700
+              hover:bg-teal-800
               text-white
+              text-sm
               font-medium
-              px-5
-              py-3
-              rounded-lg
+              px-4
+              py-2.5
+              rounded-md
               transition
             "
           >
-
-            <Plus size={19} />
-
-            Add Club
-
+            <Plus size={18} />
+            New Club
           </button>
-
         )}
 
       </div>
@@ -525,69 +434,59 @@ function AdminClubs() {
         <div className="
           bg-white
           border
-          border-gray-200
-          rounded-xl
-          shadow-sm
-          mb-8
+          border-gray-300
+          rounded-lg
+          overflow-hidden
+          mb-6
         ">
 
-
-          {/* -------------------------------------------------
-              FORM HEADER
-          ------------------------------------------------- */}
+          {/* FORM HEADER */}
 
           <div className="
             px-6
-            py-5
+            py-4
             border-b
-            border-gray-200
+            border-gray-300
             flex
             items-center
             justify-between
           ">
 
-
             <div>
 
               <h2 className="
-                text-xl
+                text-lg
                 font-semibold
                 text-gray-900
               ">
-
                 {editingId
                   ? "Edit Club"
                   : "Create New Club"}
-
               </h2>
-
 
               <p className="
                 text-sm
                 text-gray-500
                 mt-1
               ">
-
                 {editingId
                   ? "Update the club details below."
                   : "Enter the club details below."}
-
               </p>
 
             </div>
 
-
             <button
-
               type="button"
-
               onClick={resetForm}
-
               disabled={saving}
-
               className="
-                p-2
-                rounded-lg
+                w-9
+                h-9
+                flex
+                items-center
+                justify-center
+                rounded-md
                 text-gray-500
                 hover:bg-gray-100
                 hover:text-gray-700
@@ -595,33 +494,24 @@ function AdminClubs() {
                 disabled:opacity-50
               "
             >
-
-              <X size={21} />
-
+              <X size={20} />
             </button>
 
           </div>
 
 
-          {/* -------------------------------------------------
-              FORM
-          ------------------------------------------------- */}
+          {/* FORM */}
 
           <form onSubmit={handleSubmit}>
-
 
             <div className="
               p-6
               space-y-8
             ">
 
-
-              {/* =================================================
-                  CLUB INFORMATION
-              ================================================= */}
+              {/* CLUB INFORMATION */}
 
               <section>
-
 
                 <div className="
                   flex
@@ -632,9 +522,8 @@ function AdminClubs() {
 
                   <Users
                     size={19}
-                    className="text-blue-600"
+                    className="text-teal-700"
                   />
-
 
                   <div>
 
@@ -644,7 +533,6 @@ function AdminClubs() {
                     ">
                       Club Information
                     </h3>
-
 
                     <p className="
                       text-sm
@@ -666,8 +554,7 @@ function AdminClubs() {
                   gap-5
                 ">
 
-
-                  {/* Club Name */}
+                  {/* CLUB NAME */}
 
                   <div>
 
@@ -678,43 +565,31 @@ function AdminClubs() {
                       text-gray-700
                       mb-2
                     ">
-
                       Club Name
-
                       <span className="text-red-500 ml-1">
                         *
                       </span>
-
                     </label>
 
-
                     <input
-
                       type="text"
-
                       name="name"
-
                       value={form.name}
-
                       onChange={handleChange}
-
                       placeholder="e.g. Coding Club"
-
                       maxLength={100}
-
                       required
-
                       className="
                         w-full
                         px-4
-                        py-3
+                        py-2.5
                         border
                         border-gray-300
-                        rounded-lg
+                        rounded-md
                         bg-white
-                        focus:ring-2
-                        focus:ring-blue-500
-                        focus:border-blue-500
+                        focus:ring-1
+                        focus:ring-teal-600
+                        focus:border-teal-600
                         outline-none
                         transition
                       "
@@ -723,7 +598,7 @@ function AdminClubs() {
                   </div>
 
 
-                  {/* Faculty Coordinator */}
+                  {/* FACULTY COORDINATOR */}
 
                   <div>
 
@@ -734,16 +609,13 @@ function AdminClubs() {
                       text-gray-700
                       mb-2
                     ">
-
                       Faculty Coordinator
-
                     </label>
-
 
                     <div className="relative">
 
                       <UserRound
-                        size={18}
+                        size={17}
                         className="
                           absolute
                           left-3
@@ -754,35 +626,27 @@ function AdminClubs() {
                         "
                       />
 
-
                       <input
-
                         type="text"
-
                         name="facultyCoordinator"
-
                         value={
                           form.facultyCoordinator
                         }
-
                         onChange={handleChange}
-
                         placeholder="Enter faculty name"
-
                         maxLength={100}
-
                         className="
                           w-full
                           pl-10
                           pr-4
-                          py-3
+                          py-2.5
                           border
                           border-gray-300
-                          rounded-lg
+                          rounded-md
                           bg-white
-                          focus:ring-2
-                          focus:ring-blue-500
-                          focus:border-blue-500
+                          focus:ring-1
+                          focus:ring-teal-600
+                          focus:border-teal-600
                           outline-none
                           transition
                         "
@@ -793,7 +657,7 @@ function AdminClubs() {
                   </div>
 
 
-                  {/* Description */}
+                  {/* DESCRIPTION */}
 
                   <div className="md:col-span-2">
 
@@ -804,43 +668,32 @@ function AdminClubs() {
                       text-gray-700
                       mb-2
                     ">
-
                       Description
-
                     </label>
 
-
                     <textarea
-
                       name="description"
-
                       value={form.description}
-
                       onChange={handleChange}
-
                       placeholder="Describe the club and its activities..."
-
                       rows={5}
-
                       maxLength={1000}
-
                       className="
                         w-full
                         px-4
-                        py-3
+                        py-2.5
                         border
                         border-gray-300
-                        rounded-lg
+                        rounded-md
                         bg-white
-                        focus:ring-2
-                        focus:ring-blue-500
-                        focus:border-blue-500
+                        focus:ring-1
+                        focus:ring-teal-600
+                        focus:border-teal-600
                         outline-none
                         transition
                         resize-none
                       "
                     />
-
 
                     <p className="
                       text-xs
@@ -848,9 +701,7 @@ function AdminClubs() {
                       mt-1
                       text-right
                     ">
-
                       {form.description.length}/1000
-
                     </p>
 
                   </div>
@@ -860,12 +711,9 @@ function AdminClubs() {
               </section>
 
 
-              {/* =================================================
-                  CONTACT INFORMATION
-              ================================================= */}
+              {/* CONTACT INFORMATION */}
 
               <section>
-
 
                 <div className="
                   flex
@@ -876,9 +724,8 @@ function AdminClubs() {
 
                   <Mail
                     size={19}
-                    className="text-blue-600"
+                    className="text-teal-700"
                   />
-
 
                   <div>
 
@@ -888,7 +735,6 @@ function AdminClubs() {
                     ">
                       Contact Information
                     </h3>
-
 
                     <p className="
                       text-sm
@@ -910,8 +756,7 @@ function AdminClubs() {
                   gap-5
                 ">
 
-
-                  {/* Contact Email */}
+                  {/* EMAIL */}
 
                   <div>
 
@@ -922,16 +767,13 @@ function AdminClubs() {
                       text-gray-700
                       mb-2
                     ">
-
                       Contact Email
-
                     </label>
-
 
                     <div className="relative">
 
                       <Mail
-                        size={18}
+                        size={17}
                         className="
                           absolute
                           left-3
@@ -942,33 +784,26 @@ function AdminClubs() {
                         "
                       />
 
-
                       <input
-
                         type="email"
-
                         name="contactEmail"
-
                         value={
                           form.contactEmail
                         }
-
                         onChange={handleChange}
-
                         placeholder="club@college.edu"
-
                         className="
                           w-full
                           pl-10
                           pr-4
-                          py-3
+                          py-2.5
                           border
                           border-gray-300
-                          rounded-lg
+                          rounded-md
                           bg-white
-                          focus:ring-2
-                          focus:ring-blue-500
-                          focus:border-blue-500
+                          focus:ring-1
+                          focus:ring-teal-600
+                          focus:border-teal-600
                           outline-none
                           transition
                         "
@@ -979,7 +814,7 @@ function AdminClubs() {
                   </div>
 
 
-                  {/* Contact Phone */}
+                  {/* PHONE */}
 
                   <div>
 
@@ -990,16 +825,13 @@ function AdminClubs() {
                       text-gray-700
                       mb-2
                     ">
-
                       Contact Phone
-
                     </label>
-
 
                     <div className="relative">
 
                       <Phone
-                        size={18}
+                        size={17}
                         className="
                           absolute
                           left-3
@@ -1010,35 +842,27 @@ function AdminClubs() {
                         "
                       />
 
-
                       <input
-
                         type="tel"
-
                         name="contactPhone"
-
                         value={
                           form.contactPhone
                         }
-
                         onChange={handleChange}
-
                         placeholder="Enter contact number"
-
                         maxLength={20}
-
                         className="
                           w-full
                           pl-10
                           pr-4
-                          py-3
+                          py-2.5
                           border
                           border-gray-300
-                          rounded-lg
+                          rounded-md
                           bg-white
-                          focus:ring-2
-                          focus:ring-blue-500
-                          focus:border-blue-500
+                          focus:ring-1
+                          focus:ring-teal-600
+                          focus:border-teal-600
                           outline-none
                           transition
                         "
@@ -1053,12 +877,9 @@ function AdminClubs() {
               </section>
 
 
-              {/* =================================================
-                  CLUB STATUS
-              ================================================= */}
+              {/* STATUS */}
 
               <section>
-
 
                 <div className="
                   flex
@@ -1069,9 +890,8 @@ function AdminClubs() {
 
                   <Users
                     size={19}
-                    className="text-blue-600"
+                    className="text-teal-700"
                   />
-
 
                   <div>
 
@@ -1081,7 +901,6 @@ function AdminClubs() {
                     ">
                       Club Status
                     </h3>
-
 
                     <p className="
                       text-sm
@@ -1105,51 +924,38 @@ function AdminClubs() {
                     text-gray-700
                     mb-2
                   ">
-
                     Status
-
                   </label>
 
-
                   <select
-
                     name="active"
-
                     value={
                       form.active
                         ? "true"
                         : "false"
                     }
-
                     onChange={(e) => {
-
                       setForm((previous) => ({
-
                         ...previous,
-
                         active:
                           e.target.value === "true",
-
                       }));
-
                     }}
-
                     className="
                       w-full
                       px-4
-                      py-3
+                      py-2.5
                       border
                       border-gray-300
-                      rounded-lg
+                      rounded-md
                       bg-white
-                      focus:ring-2
-                      focus:ring-blue-500
-                      focus:border-blue-500
+                      focus:ring-1
+                      focus:ring-teal-600
+                      focus:border-teal-600
                       outline-none
                       transition
                     "
                   >
-
                     <option value="true">
                       Active
                     </option>
@@ -1157,7 +963,6 @@ function AdminClubs() {
                     <option value="false">
                       Inactive
                     </option>
-
                   </select>
 
                 </div>
@@ -1167,16 +972,14 @@ function AdminClubs() {
             </div>
 
 
-            {/* =================================================
-                FORM FOOTER
-            ================================================= */}
+            {/* FORM FOOTER */}
 
             <div className="
               px-6
               py-4
               bg-gray-50
               border-t
-              border-gray-200
+              border-gray-300
               flex
               flex-col-reverse
               sm:flex-row
@@ -1184,67 +987,50 @@ function AdminClubs() {
               gap-3
             ">
 
-
-              {/* Cancel */}
-
               <button
-
                 type="button"
-
                 onClick={resetForm}
-
                 disabled={saving}
-
                 className="
-                  px-6
-                  py-3
+                  px-5
+                  py-2.5
                   border
-                  border-gray-300
+                  border-gray-400
                   bg-white
                   text-gray-700
+                  text-sm
                   font-medium
-                  rounded-lg
-                  hover:bg-gray-50
+                  rounded-md
+                  hover:bg-gray-100
                   transition
                   disabled:opacity-50
                 "
               >
-
                 Cancel
-
               </button>
 
-
-              {/* Submit */}
-
               <button
-
                 type="submit"
-
                 disabled={saving}
-
                 className="
-                  px-6
-                  py-3
-                  bg-blue-600
+                  px-5
+                  py-2.5
+                  bg-teal-700
                   text-white
+                  text-sm
                   font-medium
-                  rounded-lg
-                  hover:bg-blue-700
+                  rounded-md
+                  hover:bg-teal-800
                   transition
                   disabled:opacity-50
                   disabled:cursor-not-allowed
                 "
               >
-
                 {saving
-
                   ? "Saving..."
-
                   : editingId
                     ? "Update Club"
                     : "Create Club"}
-
               </button>
 
             </div>
@@ -1265,62 +1051,30 @@ function AdminClubs() {
         <div className="
           bg-white
           border
-          border-gray-200
-          rounded-xl
-          shadow-sm
+          border-gray-300
+          rounded-lg
           overflow-hidden
         ">
 
-
-          {/* -------------------------------------------------
-              TABLE HEADER
-          ------------------------------------------------- */}
+          {/* SEARCH */}
 
           <div className="
-            px-6
-            py-5
+            px-4
+            py-4
             border-b
-            border-gray-200
+            border-gray-300
           ">
 
             <div className="
               flex
               flex-col
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
-              gap-4
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+              gap-3
             ">
 
-
-              <div>
-
-                <h2 className="
-                  text-lg
-                  font-semibold
-                  text-gray-900
-                ">
-                  All Clubs
-                </h2>
-
-
-                <p className="
-                  text-sm
-                  text-gray-500
-                  mt-1
-                ">
-
-                  {clubs.length} club
-                  {clubs.length !== 1 ? "s" : ""}
-
-                </p>
-
-              </div>
-
-
-              {/* Search */}
-
-              <div className="relative">
+              <div className="relative w-full sm:w-96">
 
                 <Search
                   size={18}
@@ -1329,36 +1083,33 @@ function AdminClubs() {
                     left-3
                     top-1/2
                     -translate-y-1/2
-                    text-gray-400
+                    text-gray-500
                   "
                 />
 
-
                 <input
-
                   type="text"
-
                   value={search}
-
                   onChange={(e) =>
                     setSearch(e.target.value)
                   }
-
-                  placeholder="Search clubs..."
-
+                  placeholder="Search clubs"
                   className="
                     w-full
-                    sm:w-72
+                    h-10
                     pl-10
                     pr-4
-                    py-2.5
                     border
-                    border-gray-300
-                    rounded-lg
-                    focus:ring-2
-                    focus:ring-blue-500
-                    focus:border-blue-500
+                    border-gray-400
+                    rounded-md
+                    bg-white
+                    text-sm
+                    text-gray-800
+                    placeholder:text-gray-500
                     outline-none
+                    focus:border-teal-600
+                    focus:ring-1
+                    focus:ring-teal-600
                   "
                 />
 
@@ -1369,36 +1120,28 @@ function AdminClubs() {
           </div>
 
 
-          {/* =================================================
-              LOADING
-          ================================================= */}
+          {/* LOADING */}
 
           {loading ? (
 
             <div className="
-              p-10
+              py-16
               text-center
+              text-sm
               text-gray-500
             ">
-
               Loading clubs...
-
             </div>
 
           ) : filteredClubs.length === 0 ? (
 
-
-            /* =================================================
-               EMPTY STATE
-            ================================================= */
-
             <div className="
-              p-12
+              py-16
               text-center
             ">
 
               <Users
-                size={45}
+                size={42}
                 className="
                   mx-auto
                   text-gray-300
@@ -1406,399 +1149,608 @@ function AdminClubs() {
                 "
               />
 
-
               <h3 className="
-                font-medium
+                text-sm
+                font-semibold
                 text-gray-700
               ">
                 No clubs found
               </h3>
-
 
               <p className="
                 text-sm
                 text-gray-500
                 mt-1
               ">
-
                 {search
-
                   ? "Try changing your search."
-
                   : "Create your first club to get started."}
-
               </p>
 
             </div>
 
-
           ) : (
 
+            <>
+              {/* TABLE */}
 
-            /* =================================================
-               TABLE
-            ================================================= */
+              <div className="overflow-x-auto">
 
-            <div className="overflow-x-auto">
-
-              <table className="w-full">
-
-
-                <thead className="
-                  bg-gray-50
-                  border-b
+                <table className="
+                  w-full
+                  border-collapse
                 ">
 
-                  <tr>
+                  <thead>
 
-
-                    <th className="
-                      text-left
-                      px-6
-                      py-4
-                      text-sm
-                      font-semibold
-                      text-gray-600
+                    <tr className="
+                      bg-white
+                      border-b
+                      border-gray-400
                     ">
-                      Club
-                    </th>
+
+                      <th className="
+                        px-4
+                        py-3
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      ">
+                        <div className="
+                          flex
+                          items-center
+                          gap-1
+                        ">
+                          Club Name
+                          <span className="text-gray-400">
+                            ↕
+                          </span>
+                        </div>
+                      </th>
 
 
-                    <th className="
-                      text-left
-                      px-6
-                      py-4
-                      text-sm
-                      font-semibold
-                      text-gray-600
-                    ">
-                      Coordinator
-                    </th>
+                      <th className="
+                        px-4
+                        py-3
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      ">
+                        <div className="
+                          flex
+                          items-center
+                          gap-1
+                        ">
+                          Coordinator
+                          <span className="text-gray-400">
+                            ↕
+                          </span>
+                        </div>
+                      </th>
 
 
-                    <th className="
-                      text-left
-                      px-6
-                      py-4
-                      text-sm
-                      font-semibold
-                      text-gray-600
-                    ">
-                      Contact
-                    </th>
+                      <th className="
+                        px-4
+                        py-3
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      ">
+                        <div className="
+                          flex
+                          items-center
+                          gap-1
+                        ">
+                          Contact
+                          <span className="text-gray-400">
+                            ↕
+                          </span>
+                        </div>
+                      </th>
 
 
-                    <th className="
-                      text-left
-                      px-6
-                      py-4
-                      text-sm
-                      font-semibold
-                      text-gray-600
-                    ">
-                      Status
-                    </th>
+                      <th className="
+                        px-4
+                        py-3
+                        text-left
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      ">
+                        <div className="
+                          flex
+                          items-center
+                          gap-1
+                        ">
+                          Status
+                          <span className="text-gray-400">
+                            ↕
+                          </span>
+                        </div>
+                      </th>
 
 
-                    <th className="
-                      text-right
-                      px-6
-                      py-4
-                      text-sm
-                      font-semibold
-                      text-gray-600
-                    ">
-                      Actions
-                    </th>
+                      <th className="
+                        px-4
+                        py-3
+                        text-right
+                        text-xs
+                        font-semibold
+                        uppercase
+                        tracking-wide
+                        text-gray-600
+                        whitespace-nowrap
+                      ">
+                        Actions
+                      </th>
 
-                  </tr>
+                    </tr>
 
-                </thead>
-
-
-                <tbody>
-
-                  {filteredClubs.map((club) => (
-
-                    <tr
-
-                      key={club.id}
-
-                      className="
-                        border-b
-                        last:border-b-0
-                        hover:bg-gray-50
-                      "
-                    >
+                  </thead>
 
 
-                      {/* =================================================
-                          CLUB
-                      ================================================= */}
+                  <tbody>
 
-                      <td className="px-6 py-4">
+                    {filteredClubs.map((club) => (
 
-                        <p className="
-                          font-medium
-                          text-gray-900
+                      <tr
+                        key={club.id}
+                        className="
+                          border-b
+                          border-gray-300
+                          hover:bg-gray-50
+                          transition-colors
+                        "
+                      >
+
+                        {/* CLUB */}
+
+                        <td className="
+                          px-4
+                          py-3
                         ">
 
-                          {club.name}
-
-                        </p>
-
-
-                        {club.description && (
-
                           <div className="
-                            relative
-                            group
-                            mt-1
-                            max-w-md
+                            min-w-[240px]
                           ">
 
                             <p className="
                               text-sm
-                              text-gray-500
-                              truncate
-                              cursor-help"
-                            >
-
-                              {club.description}
-
+                              font-semibold
+                              text-gray-900
+                            ">
+                              {club.name}
                             </p>
 
-
-                            {/* Full Description Hover */}
-
-                            <div className="
-                              absolute
-                              left-0
-                              top-full
-                              z-50
-                              hidden
-                              group-hover:block
-                              w-96
-                              mt-2
-                            ">
-
-                              <div className="
-                                bg-gray-900
-                                text-white
-                                text-sm
-                                rounded-lg
-                                shadow-xl
-                                p-4
-                                whitespace-normal
-                                break-words
-                              ">
-
+                            {club.description && (
+                              <p
+                                className="
+                                  text-xs
+                                  text-gray-500
+                                  mt-1
+                                  max-w-md
+                                  truncate
+                                "
+                                title={club.description}
+                              >
                                 {club.description}
-
-                              </div>
-
-                            </div>
+                              </p>
+                            )}
 
                           </div>
 
-                        )}
-
-                      </td>
+                        </td>
 
 
-                      {/* =================================================
-                          COORDINATOR
-                      ================================================= */}
+                        {/* COORDINATOR */}
 
-                      <td className="
-                        px-6
-                        py-4
-                        text-sm
-                        text-gray-600
-                      ">
-
-                        {club.facultyCoordinator || "—"}
-
-                      </td>
-
-
-                      {/* =================================================
-                          CONTACT
-                      ================================================= */}
-
-                      <td className="px-6 py-4">
-
-                        <div className="
-                          space-y-1
+                        <td className="
+                          px-4
+                          py-3
                           text-sm
+                          text-gray-700
+                          whitespace-nowrap
+                        ">
+                          {club.facultyCoordinator || "—"}
+                        </td>
+
+
+                        {/* CONTACT */}
+
+                        <td className="
+                          px-4
+                          py-3
                         ">
 
+                          <div className="
+                            space-y-1
+                            text-sm
+                          ">
 
-                          {club.contactEmail && (
+                            {club.contactEmail && (
+                              <div className="
+                                flex
+                                items-center
+                                gap-2
+                                text-gray-600
+                                max-w-[260px]
+                              ">
 
-                            <div className="
-                              flex
-                              items-center
-                              gap-2
-                              text-gray-600
-                            ">
+                                <Mail
+                                  size={14}
+                                  className="shrink-0"
+                                />
 
-                              <Mail size={14} />
+                                <span className="truncate">
+                                  {club.contactEmail}
+                                </span>
 
-                              <span>
-                                {club.contactEmail}
-                              </span>
-
-                            </div>
-
-                          )}
-
-
-                          {club.contactPhone && (
-
-                            <div className="
-                              flex
-                              items-center
-                              gap-2
-                              text-gray-600
-                            ">
-
-                              <Phone size={14} />
-
-                              <span>
-                                {club.contactPhone}
-                              </span>
-
-                            </div>
-
-                          )}
-
-
-                          {!club.contactEmail &&
-                            !club.contactPhone && (
-
-                              <span className="text-gray-400">
-                                —
-                              </span>
-
+                              </div>
                             )}
 
-                        </div>
+                            {club.contactPhone && (
+                              <div className="
+                                flex
+                                items-center
+                                gap-2
+                                text-gray-600
+                              ">
 
-                      </td>
+                                <Phone
+                                  size={14}
+                                  className="shrink-0"
+                                />
 
+                                <span>
+                                  {club.contactPhone}
+                                </span>
 
-                      {/* =================================================
-                          STATUS
-                      ================================================= */}
+                              </div>
+                            )}
 
-                      <td className="px-6 py-4">
+                            {!club.contactEmail &&
+                              !club.contactPhone && (
+                                <span className="
+                                  text-gray-400
+                                ">
+                                  —
+                                </span>
+                              )}
 
-                        <span className={`
-                          inline-flex
-                          px-3
-                          py-1
-                          rounded-full
-                          text-xs
-                          font-medium
+                          </div>
 
-                          ${
-                            club.active
-
-                              ? "bg-green-100 text-green-700"
-
-                              : "bg-gray-100 text-gray-600"
-                          }
-                        `}>
-
-                          {club.active
-                            ? "Active"
-                            : "Inactive"}
-
-                        </span>
-
-                      </td>
+                        </td>
 
 
-                      {/* =================================================
-                          ACTIONS
-                      ================================================= */}
+                        {/* STATUS */}
 
-                      <td className="px-6 py-4">
-
-                        <div className="
-                          flex
-                          justify-end
-                          gap-2
+                        <td className="
+                          px-4
+                          py-3
                         ">
 
+                          <span
+                            className={`
+                              inline-flex
+                              px-2.5
+                              py-1
+                              rounded-full
+                              text-xs
+                              font-medium
 
-                          {/* Edit */}
-
-                          <button
-
-                            type="button"
-
-                            onClick={() =>
-                              editClub(club)
-                            }
-
-                            className="
-                              p-2
-                              rounded-lg
-                              bg-yellow-50
-                              text-yellow-700
-                              hover:bg-yellow-100
-                              transition
-                            "
-
-                            title="Edit Club"
+                              ${
+                                club.active
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-600"
+                              }
+                            `}
                           >
+                            {club.active
+                              ? "Active"
+                              : "Inactive"}
+                          </span>
 
-                            <Pencil size={17} />
-
-                          </button>
+                        </td>
 
 
-                          {/* Delete */}
+                        {/* ACTIONS */}
 
-                          <button
+                        <td className="
+                          px-4
+                          py-3
+                        ">
 
-                            type="button"
+                          <div className="
+                            flex
+                            items-center
+                            justify-end
+                            gap-2
+                          ">
 
-                            onClick={() =>
-                              deleteClub(club.id)
-                            }
+                            {/* VIEW */}
 
-                            className="
-                              p-2
-                              rounded-lg
-                              bg-red-50
-                              text-red-700
-                              hover:bg-red-100
-                              transition
-                            "
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setViewClub(club)
+                              }
+                              className="
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-gray-400
+                                rounded-md
+                                text-gray-600
+                                bg-white
+                                hover:bg-gray-100
+                                hover:text-gray-900
+                                transition
+                              "
+                              title="View Club"
+                            >
+                              <Eye size={17} />
+                            </button>
 
-                            title="Delete Club"
-                          >
 
-                            <Trash2 size={17} />
+                            {/* EDIT */}
 
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                editClub(club)
+                              }
+                              className="
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-gray-400
+                                rounded-md
+                                text-gray-600
+                                bg-white
+                                hover:bg-gray-100
+                                hover:text-gray-900
+                                transition
+                              "
+                              title="Edit Club"
+                            >
+                              <Pencil size={17} />
+                            </button>
 
-                        </div>
 
-                      </td>
+                            {/* DELETE */}
 
-                    </tr>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteClub(club.id)
+                              }
+                              className="
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-red-500
+                                rounded-md
+                                text-white
+                                bg-red-600
+                                hover:bg-red-700
+                                transition
+                              "
+                              title="Delete Club"
+                            >
+                              <Trash2 size={17} />
+                            </button>
 
-                  ))}
+                          </div>
 
-                </tbody>
+                        </td>
 
-              </table>
+                      </tr>
 
-            </div>
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+
+              {/* PAGINATION STYLE */}
+
+              <div className="
+                px-4
+                py-4
+                border-t
+                border-gray-300
+                flex
+                flex-col
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+                gap-4
+              ">
+
+                <div className="
+                  text-sm
+                  text-gray-600
+                ">
+                  1-{filteredClubs.length} of {filteredClubs.length}
+                </div>
+
+
+                <div className="
+                  flex
+                  items-center
+                  gap-4
+                ">
+
+                  <div className="
+                    flex
+                    items-center
+                    gap-2
+                  ">
+
+                    <span className="
+                      text-sm
+                      text-gray-600
+                      whitespace-nowrap
+                    ">
+                      Rows per page
+                    </span>
+
+                    <select
+                      value={10}
+                      disabled
+                      className="
+                        h-9
+                        px-2
+                        border
+                        border-gray-400
+                        rounded-md
+                        bg-white
+                        text-sm
+                        text-gray-700
+                      "
+                    >
+                      <option value={10}>
+                        10
+                      </option>
+                    </select>
+
+                  </div>
+
+
+                  <div className="
+                    flex
+                    items-center
+                    gap-1
+                  ">
+
+                    <button
+                      type="button"
+                      disabled
+                      className="
+                        w-9
+                        h-9
+                        flex
+                        items-center
+                        justify-center
+                        border
+                        border-gray-400
+                        rounded-md
+                        bg-white
+                        text-gray-400
+                      "
+                    >
+                      <ChevronsLeft size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled
+                      className="
+                        w-9
+                        h-9
+                        flex
+                        items-center
+                        justify-center
+                        border
+                        border-gray-400
+                        rounded-md
+                        bg-white
+                        text-gray-400
+                      "
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className="
+                        w-9
+                        h-9
+                        flex
+                        items-center
+                        justify-center
+                        rounded-md
+                        bg-teal-700
+                        text-white
+                        text-sm
+                        font-semibold
+                      "
+                    >
+                      1
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled
+                      className="
+                        w-9
+                        h-9
+                        flex
+                        items-center
+                        justify-center
+                        border
+                        border-gray-400
+                        rounded-md
+                        bg-white
+                        text-gray-400
+                      "
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled
+                      className="
+                        w-9
+                        h-9
+                        flex
+                        items-center
+                        justify-center
+                        border
+                        border-gray-400
+                        rounded-md
+                        bg-white
+                        text-gray-400
+                      "
+                    >
+                      <ChevronsRight size={16} />
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </>
 
           )}
 
@@ -1806,8 +1758,350 @@ function AdminClubs() {
 
       )}
 
-    </div>
 
+      {/* =====================================================
+          VIEW CLUB RIGHT DRAWER
+      ===================================================== */}
+
+      {viewClub && (
+
+        <div className="
+          fixed
+          inset-0
+          z-[100]
+        ">
+
+          {/* OVERLAY */}
+
+          <div
+            className="
+              absolute
+              inset-0
+              bg-black/50
+              backdrop-blur-[2px]
+            "
+            onClick={() => setViewClub(null)}
+          />
+
+
+          {/* DRAWER */}
+
+          <div className="
+            absolute
+            top-0
+            right-0
+            h-full
+            w-full
+            sm:w-[520px]
+            lg:w-[620px]
+            bg-white
+            shadow-2xl
+            flex
+            flex-col
+          ">
+
+            {/* DRAWER HEADER */}
+
+            <div className="
+              flex
+              items-center
+              justify-between
+              px-6
+              py-5
+              border-b
+              border-gray-300
+              shrink-0
+            ">
+
+              <h2 className="
+                text-xl
+                font-semibold
+                text-gray-900
+                truncate
+                pr-4
+              ">
+                {viewClub.name}
+              </h2>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewClub(null)
+                }
+                className="
+                  w-10
+                  h-10
+                  rounded-full
+                  border
+                  border-gray-400
+                  flex
+                  items-center
+                  justify-center
+                  text-gray-600
+                  hover:bg-gray-100
+                  hover:text-gray-900
+                  transition
+                  shrink-0
+                "
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+
+            {/* DRAWER CONTENT */}
+
+            <div className="
+              flex-1
+              overflow-y-auto
+              px-6
+              py-6
+            ">
+
+              <div className="space-y-5">
+
+                {/* CLUB NAME */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Club Name
+                  </p>
+
+                  <p className="
+                    text-sm
+                    font-semibold
+                    text-gray-900
+                  ">
+                    {viewClub.name || "—"}
+                  </p>
+
+                </div>
+
+
+                {/* DESCRIPTION */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Description
+                  </p>
+
+                  <p className="
+                    text-sm
+                    text-gray-800
+                    leading-6
+                    whitespace-pre-wrap
+                  ">
+                    {viewClub.description || "—"}
+                  </p>
+
+                </div>
+
+
+                {/* FACULTY COORDINATOR */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Faculty Coordinator
+                  </p>
+
+                  <p className="
+                    text-sm
+                    text-gray-900
+                  ">
+                    {viewClub.facultyCoordinator || "—"}
+                  </p>
+
+                </div>
+
+
+                {/* EMAIL */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Contact Email
+                  </p>
+
+                  <p className="
+                    text-sm
+                    text-gray-900
+                    break-all
+                  ">
+                    {viewClub.contactEmail || "—"}
+                  </p>
+
+                </div>
+
+
+                {/* PHONE */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Contact Phone
+                  </p>
+
+                  <p className="
+                    text-sm
+                    text-gray-900
+                  ">
+                    {viewClub.contactPhone || "—"}
+                  </p>
+
+                </div>
+
+
+                {/* STATUS */}
+
+                <div className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-[190px_1fr]
+                  gap-1
+                  sm:gap-6
+                ">
+
+                  <p className="
+                    text-sm
+                    font-medium
+                    text-gray-600
+                  ">
+                    Status
+                  </p>
+
+                  <div>
+
+                    <span
+                      className={`
+                        inline-flex
+                        px-3
+                        py-1
+                        rounded-full
+                        text-xs
+                        font-medium
+
+                        ${
+                          viewClub.active
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }
+                      `}
+                    >
+                      {viewClub.active
+                        ? "Active"
+                        : "Inactive"}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* DRAWER FOOTER */}
+
+            <div className="
+              px-6
+              py-4
+              border-t
+              border-gray-300
+              bg-white
+              shrink-0
+              flex
+              justify-end
+            ">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewClub(null)
+                }
+                className="
+                  px-5
+                  py-2.5
+                  border
+                  border-gray-400
+                  rounded-md
+                  bg-white
+                  text-sm
+                  font-medium
+                  text-gray-700
+                  hover:bg-gray-100
+                  transition
+                "
+              >
+                Close
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </div>
   );
 }
+
 export default AdminClubs;
