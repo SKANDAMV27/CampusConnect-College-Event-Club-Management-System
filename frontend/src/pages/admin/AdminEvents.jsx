@@ -10,6 +10,11 @@ import {
   Clock3,
   FileText,
   Search,
+  Eye,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
 } from "lucide-react";
 
 import Swal from "sweetalert2";
@@ -1433,274 +1438,200 @@ function AdminEvents() {
       ===================================================== */}
 
       {!showForm && (
+        <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
 
-        <div className="
-          bg-white
-          border
-          border-gray-200
-          rounded-xl
-          shadow-sm
-          overflow-hidden
-        ">
+          {/* Search / Filter */}
 
+          <div className="px-4 py-4 border-b border-gray-300">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
 
-          {/* -------------------------------------------------
-              TABLE HEADER
-          ------------------------------------------------- */}
+              <div className="relative w-full lg:w-96">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                />
 
-          <div className="px-6 py-5 border-b border-gray-200">
-
-            <div className="
-              flex
-              flex-col
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
-              gap-4
-            ">
-
-
-              <div>
-
-                <h2 className="text-lg font-semibold text-gray-900">
-                  All Events
-                </h2>
-
-                <p className="text-sm text-gray-500 mt-1">
-
-                  {totalElements} event
-                  {totalElements !== 1 ? "s" : ""}
-
-                </p>
-
-              </div>
-
-
-              {/* -------------------------------------------------
-                  SEARCH + FILTER
-              ------------------------------------------------- */}
-
-              <div className="flex flex-col sm:flex-row gap-3">
-
-
-                {/* Search */}
-
-                <div className="relative">
-
-                  <Search
-                    size={18}
-                    className="
-                      absolute
-                      left-3
-                      top-1/2
-                      -translate-y-1/2
-                      text-gray-400
-                    "
-                  />
-
-
-                  <input
-
-                    type="text"
-
-                    value={search}
-
-                    onChange={handleSearchChange}
-
-                    placeholder="Search events..."
-
-                    className="
-                      w-full
-                      sm:w-72
-                      pl-10
-                      pr-4
-                      py-2.5
-                      border
-                      border-gray-300
-                      rounded-lg
-                      focus:ring-2
-                      focus:ring-blue-500
-                      focus:border-blue-500
-                      outline-none
-                    "
-                  />
-
-                </div>
-
-
-                {/* Status Filter */}
-
-                <select
-
-                  value={status}
-
-                  onChange={handleStatusChange}
-
+                <input
+                  type="text"
+                  value={search}
+                  onChange={handleSearchChange}
+                  placeholder="Search events"
                   className="
                     w-full
-                    sm:w-48
-                    px-4
-                    py-2.5
+                    h-11
+                    pl-10
+                    pr-4
                     border
-                    border-gray-300
-                    rounded-lg
+                    border-gray-400
+                    rounded-md
                     bg-white
-                    focus:ring-2
-                    focus:ring-blue-500
-                    focus:border-blue-500
+                    text-sm
+                    text-gray-800
+                    placeholder:text-gray-500
                     outline-none
+                    focus:border-teal-600
+                    focus:ring-1
+                    focus:ring-teal-600
+                  "
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+
+                <select
+                  value={status}
+                  onChange={handleStatusChange}
+                  className="
+                    h-11
+                    px-3
+                    min-w-[150px]
+                    border
+                    border-gray-400
+                    rounded-md
+                    bg-white
+                    text-sm
+                    text-gray-700
+                    outline-none
+                    focus:border-teal-600
+                    focus:ring-1
+                    focus:ring-teal-600
                   "
                 >
-
-                  <option value="">
-                    All Status
-                  </option>
-
-                  <option value="DRAFT">
-                    Draft
-                  </option>
-
-                  <option value="PUBLISHED">
-                    Published
-                  </option>
-
-                  <option value="CANCELLED">
-                    Cancelled
-                  </option>
-
-                  <option value="COMPLETED">
-                    Completed
-                  </option>
-
+                  <option value="">All Status</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="CANCELLED">Cancelled</option>
+                  <option value="COMPLETED">Completed</option>
                 </select>
 
               </div>
 
             </div>
-
           </div>
 
 
-          {/* =================================================
-              LOADING
-          ================================================= */}
+          {/* Loading */}
 
           {loading ? (
 
-            <div className="p-10 text-center text-gray-500">
-
+            <div className="py-16 text-center text-sm text-gray-500">
               Loading events...
-
             </div>
 
           ) : events.length === 0 ? (
 
-
-            /* =================================================
-               EMPTY STATE
-            ================================================= */
-
-            <div className="p-12 text-center">
+            <div className="py-16 text-center">
 
               <CalendarDays
-                size={45}
+                size={42}
                 className="mx-auto text-gray-300 mb-3"
               />
 
-              <h3 className="font-medium text-gray-700">
+              <h3 className="text-sm font-semibold text-gray-700">
                 No events found
               </h3>
 
               <p className="text-sm text-gray-500 mt-1">
-
                 {search || status
-
                   ? "Try changing your search or filter."
-
                   : "Create your first event to get started."}
-
               </p>
 
             </div>
 
-
           ) : (
 
-
-            /* =================================================
-               TABLE + PAGINATION
-            ================================================= */
-
             <>
-
-
               {/* =================================================
                   TABLE
               ================================================= */}
 
               <div className="overflow-x-auto">
 
-                <table className="w-full">
+                <table className="w-full border-collapse">
 
-                  <thead className="bg-gray-50 border-b">
+                  <thead>
 
-                    <tr>
+                    <tr className="bg-white border-b border-gray-400">
 
                       <th className="
+                        px-4
+                        py-3
                         text-left
-                        px-6
-                        py-4
-                        text-sm
+                        text-xs
                         font-semibold
+                        uppercase
+                        tracking-wide
                         text-gray-600
+                        whitespace-nowrap
                       ">
-                        Event
+                        <div className="flex items-center gap-1">
+                          Event
+                          <span className="text-gray-400">↕</span>
+                        </div>
                       </th>
 
-
                       <th className="
+                        px-4
+                        py-3
                         text-left
-                        px-6
-                        py-4
-                        text-sm
+                        text-xs
                         font-semibold
+                        uppercase
+                        tracking-wide
                         text-gray-600
+                        whitespace-nowrap
                       ">
-                        Date
+                        <div className="flex items-center gap-1">
+                          Event Date
+                          <span className="text-gray-400">↕</span>
+                        </div>
                       </th>
 
-
                       <th className="
+                        px-4
+                        py-3
                         text-left
-                        px-6
-                        py-4
-                        text-sm
+                        text-xs
                         font-semibold
+                        uppercase
+                        tracking-wide
                         text-gray-600
+                        whitespace-nowrap
                       ">
-                        Venue
+                        <div className="flex items-center gap-1">
+                          Venue
+                          <span className="text-gray-400">↕</span>
+                        </div>
                       </th>
 
-
                       <th className="
+                        px-4
+                        py-3
                         text-left
-                        px-6
-                        py-4
-                        text-sm
+                        text-xs
                         font-semibold
+                        uppercase
+                        tracking-wide
                         text-gray-600
+                        whitespace-nowrap
                       ">
-                        Status
+                        <div className="flex items-center gap-1">
+                          Status
+                          <span className="text-gray-400">↕</span>
+                        </div>
                       </th>
 
-
                       <th className="
+                        px-4
+                        py-3
                         text-right
-                        px-6
-                        py-4
-                        text-sm
+                        text-xs
                         font-semibold
+                        uppercase
+                        tracking-wide
                         text-gray-600
+                        whitespace-nowrap
                       ">
                         Actions
                       </th>
@@ -1715,220 +1646,215 @@ function AdminEvents() {
                     {events.map((event) => (
 
                       <tr
-
                         key={event.id}
-
                         className="
                           border-b
-                          last:border-b-0
+                          border-gray-300
                           hover:bg-gray-50
+                          transition-colors
                         "
                       >
 
+                        {/* EVENT */}
 
-                        {/* =================================================
-                            EVENT
-                        ================================================= */}
+                        <td className="px-4 py-3">
 
-                        <td className="px-6 py-4">
-
-                          <p className="font-medium text-gray-900">
-                            {event.title}
-                          </p>
-
-
-                          {/* Description Hover */}
-
-                          <div className="
-                            relative
-                            group
-                            mt-1
-                            max-w-md
-                          ">
+                          <div className="min-w-[250px]">
 
                             <p className="
                               text-sm
-                              text-gray-500
-                              truncate
-                              cursor-help
+                              font-semibold
+                              text-gray-900
                             ">
-                              {event.description}
+                              {event.title}
                             </p>
 
-
-                            {/* Full Description */}
-
-                            <div className="
-                              absolute
-                              left-0
-                              top-full
-                              z-50
-                              hidden
-                              group-hover:block
-                              w-96
-                              mt-2
-                            ">
-
-                              <div className="
-                                bg-gray-900
-                                text-white
-                                text-sm
-                                rounded-lg
-                                shadow-xl
-                                p-4
-                                whitespace-normal
-                                break-words
-                              ">
-
-                                {event.description}
-
-                              </div>
-
-                            </div>
+                            <p
+                              className="
+                                text-xs
+                                text-gray-500
+                                mt-1
+                                max-w-md
+                                truncate
+                              "
+                              title={event.description}
+                            >
+                              {event.description || "No description"}
+                            </p>
 
                           </div>
 
                         </td>
 
 
-                        {/* =================================================
-                            DATE
-                        ================================================= */}
+                        {/* DATE */}
 
                         <td className="
-                          px-6
-                          py-4
+                          px-4
+                          py-3
                           text-sm
-                          text-gray-600
+                          text-gray-700
                           whitespace-nowrap
                         ">
-
-                          {event.eventDate}
-
+                          {event.eventDate || "—"}
                         </td>
 
 
-                        {/* =================================================
-                            VENUE
-                        ================================================= */}
+                        {/* VENUE */}
 
                         <td className="
-                          px-6
-                          py-4
+                          px-4
+                          py-3
                           text-sm
-                          text-gray-600
+                          text-gray-700
                         ">
-
-                          {event.venue}
-
+                          {event.venue || "—"}
                         </td>
 
 
-                        {/* =================================================
-                            STATUS
-                        ================================================= */}
+                        {/* STATUS */}
 
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
 
                           <span
-
                             className={`
                               inline-flex
-                              px-3
+                              items-center
+                              px-2.5
                               py-1
                               rounded-full
                               text-xs
                               font-medium
+                              whitespace-nowrap
 
                               ${
                                 event.status === "PUBLISHED"
-
                                   ? "bg-green-100 text-green-700"
-
                                   : event.status === "CANCELLED"
-
-                                    ? "bg-red-100 text-red-700"
-
-                                    : event.status === "COMPLETED"
-
-                                      ? "bg-purple-100 text-purple-700"
-
-                                      : "bg-yellow-100 text-yellow-700"
+                                  ? "bg-red-100 text-red-700"
+                                  : event.status === "COMPLETED"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-yellow-100 text-yellow-700"
                               }
                             `}
                           >
-
                             {event.status}
-
                           </span>
 
                         </td>
 
 
-                        {/* =================================================
-                            ACTIONS
-                        ================================================= */}
+                        {/* ACTIONS */}
 
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
 
-                          <div className="
-                            flex
-                            justify-end
-                            gap-2
-                          ">
+                          <div className="flex items-center justify-end gap-2">
 
-
-                            {/* Edit */}
+                            {/* VIEW */}
 
                             <button
-
                               type="button"
-
                               onClick={() =>
-                                openEditForm(event)
+                                Swal.fire({
+                                  title: event.title,
+                                  html: `
+                                    <div style="text-align:left;font-size:14px;line-height:1.8">
+                                      <p><strong>Description:</strong> ${
+                                        event.description || "—"
+                                      }</p>
+                                      <p><strong>Date:</strong> ${
+                                        event.eventDate || "—"
+                                      }</p>
+                                      <p><strong>Start Time:</strong> ${
+                                        event.startTime || "—"
+                                      }</p>
+                                      <p><strong>End Time:</strong> ${
+                                        event.endTime || "—"
+                                      }</p>
+                                      <p><strong>Venue:</strong> ${
+                                        event.venue || "—"
+                                      }</p>
+                                      <p><strong>Status:</strong> ${
+                                        event.status || "—"
+                                      }</p>
+                                      <p><strong>Registration Deadline:</strong> ${
+                                        event.registrationDeadline || "—"
+                                      }</p>
+                                    </div>
+                                  `,
+                                  confirmButtonColor: "#00897b",
+                                  confirmButtonText: "Close",
+                                })
                               }
-
                               className="
-                                p-2
-                                rounded-lg
-                                bg-yellow-50
-                                text-yellow-700
-                                hover:bg-yellow-100
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-gray-400
+                                rounded-md
+                                text-gray-600
+                                bg-white
+                                hover:bg-gray-100
+                                hover:text-gray-900
                                 transition
                               "
-
-                              title="Edit"
+                              title="View Event"
                             >
-
-                              <Pencil size={17} />
-
+                              <Eye size={17} />
                             </button>
 
 
-                            {/* Delete */}
+                            {/* EDIT */}
 
                             <button
-
                               type="button"
-
-                              onClick={() =>
-                                deleteEvent(event.id)
-                              }
-
+                              onClick={() => openEditForm(event)}
                               className="
-                                p-2
-                                rounded-lg
-                                bg-red-50
-                                text-red-700
-                                hover:bg-red-100
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-gray-400
+                                rounded-md
+                                text-gray-600
+                                bg-white
+                                hover:bg-gray-100
+                                hover:text-gray-900
                                 transition
                               "
-
-                              title="Delete"
+                              title="Edit Event"
                             >
+                              <Pencil size={17} />
+                            </button>
 
+
+                            {/* DELETE */}
+
+                            <button
+                              type="button"
+                              onClick={() => deleteEvent(event.id)}
+                              className="
+                                w-9
+                                h-9
+                                inline-flex
+                                items-center
+                                justify-center
+                                border
+                                border-red-500
+                                rounded-md
+                                text-white
+                                bg-red-600
+                                hover:bg-red-700
+                                transition
+                              "
+                              title="Delete Event"
+                            >
                               <Trash2 size={17} />
-
                             </button>
 
                           </div>
@@ -1953,145 +1879,181 @@ function AdminEvents() {
               {totalPages > 0 && (
 
                 <div className="
-                  px-6
+                  px-4
                   py-4
+                  flex
+                  flex-col
+                  sm:flex-row
+                  sm:items-center
+                  sm:justify-between
+                  gap-4
                   border-t
-                  border-gray-200
-                  bg-gray-50
+                  border-gray-300
                 ">
+
+                  {/* RECORD COUNT */}
+
+                  <div className="text-sm text-gray-600">
+
+                    {startRecord}-{endRecord} of {totalElements}
+
+                  </div>
+
+
+                  {/* RIGHT SIDE */}
 
                   <div className="
                     flex
                     flex-col
                     sm:flex-row
-                    items-center
-                    justify-between
+                    sm:items-center
                     gap-4
                   ">
 
+                    {/* ROWS PER PAGE */}
 
-                    {/* Record Count */}
+                    <div className="flex items-center gap-2">
 
-                    <p className="text-sm text-gray-600">
-
-                      Showing{" "}
-
-                      <span className="font-medium">
-                        {startRecord}
+                      <span className="text-sm text-gray-600 whitespace-nowrap">
+                        Rows per page
                       </span>
 
-                      {" "}to{" "}
+                      <select
+                        value={size}
+                        disabled
+                        className="
+                          h-9
+                          px-2
+                          border
+                          border-gray-400
+                          rounded-md
+                          bg-white
+                          text-sm
+                          text-gray-700
+                        "
+                      >
+                        <option value={10}>10</option>
+                      </select>
 
-                      <span className="font-medium">
-                        {endRecord}
-                      </span>
+                    </div>
 
-                      {" "}of{" "}
 
-                      <span className="font-medium">
-                        {totalElements}
-                      </span>
+                    {/* PAGE BUTTONS */}
 
-                      {" "}events
+                    <div className="flex items-center gap-1">
 
-                    </p>
-                    {/* Pagination */}
-
-                    <div className="
-                      flex
-                      items-center
-                      gap-1
-                      flex-wrap
-                      justify-center
-                    ">
-                      {/* Previous */}
                       <button
                         type="button"
                         disabled={page === 0}
-                        onClick={() =>
-                          goToPage(page - 1)
-                        }
-
+                        onClick={() => goToPage(0)}
                         className="
-                          px-3
-                          py-2
+                          w-9
+                          h-9
+                          flex
+                          items-center
+                          justify-center
                           border
-                          border-gray-300
-                          rounded-lg
-                          text-sm
-                          font-medium
-                          text-gray-700
+                          border-gray-400
+                          rounded-md
                           bg-white
+                          text-gray-600
                           hover:bg-gray-100
-                          disabled:opacity-50
+                          disabled:opacity-40
                           disabled:cursor-not-allowed
                         "
                       >
-                        Previous
+                        <ChevronsLeft size={16} />
                       </button>
 
-                      {/* Page Numbers */}
-
-                      {Array.from(
-                        { length: totalPages },
-                        (_, index) => index
-                      ).map((pageNumber) => (
-
-                        <button
-                          key={pageNumber}
-                          type="button"
-                          onClick={() =>
-                            goToPage(pageNumber)
-                          }
-
-                          className={`
-                            min-w-10
-                            px-3
-                            py-2
-                            border
-                            rounded-lg
-                            text-sm
-                            font-medium
-
-                            ${
-                              page === pageNumber
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                            }
-                          `}
-                        >
-                          {pageNumber + 1}
-                        </button>
-
-                      ))}
-
-                      {/* Next */}
 
                       <button
                         type="button"
-                        disabled={
-                          page >= totalPages - 1
-                        }
-                        onClick={() =>
-                          goToPage(page + 1)
-                        }
-
+                        disabled={page === 0}
+                        onClick={() => goToPage(page - 1)}
                         className="
-                          px-3
-                          py-2
+                          w-9
+                          h-9
+                          flex
+                          items-center
+                          justify-center
                           border
-                          border-gray-300
-                          rounded-lg
-                          text-sm
-                          font-medium
-                          text-gray-700
+                          border-gray-400
+                          rounded-md
                           bg-white
+                          text-gray-600
                           hover:bg-gray-100
-                          disabled:opacity-50
+                          disabled:opacity-40
                           disabled:cursor-not-allowed
                         "
                       >
-                        Next
+                        <ChevronLeft size={16} />
+                      </button>
+
+
+                      <button
+                        type="button"
+                        className="
+                          w-9
+                          h-9
+                          flex
+                          items-center
+                          justify-center
+                          rounded-md
+                          bg-teal-700
+                          text-white
+                          text-sm
+                          font-semibold
+                        "
+                      >
+                        {page + 1}
+                      </button>
+
+
+                      <button
+                        type="button"
+                        disabled={page >= totalPages - 1}
+                        onClick={() => goToPage(page + 1)}
+                        className="
+                          w-9
+                          h-9
+                          flex
+                          items-center
+                          justify-center
+                          border
+                          border-gray-400
+                          rounded-md
+                          bg-white
+                          text-gray-600
+                          hover:bg-gray-100
+                          disabled:opacity-40
+                          disabled:cursor-not-allowed
+                        "
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+
+
+                      <button
+                        type="button"
+                        disabled={page >= totalPages - 1}
+                        onClick={() => goToPage(totalPages - 1)}
+                        className="
+                          w-9
+                          h-9
+                          flex
+                          items-center
+                          justify-center
+                          border
+                          border-gray-400
+                          rounded-md
+                          bg-white
+                          text-gray-600
+                          hover:bg-gray-100
+                          disabled:opacity-40
+                          disabled:cursor-not-allowed
+                        "
+                      >
+                        <ChevronsRight size={16} />
                       </button>
 
                     </div>
