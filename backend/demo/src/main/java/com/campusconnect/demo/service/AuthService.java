@@ -13,22 +13,35 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.campusconnect.demo.dto.ForgotPasswordRequest;
+import com.campusconnect.demo.dto.ResetPasswordRequest;
+import com.campusconnect.demo.entity.PasswordResetToken;
+import com.campusconnect.demo.repository.PasswordResetTokenRepository;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
 @Service
 
 public class AuthService {
 
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
     private final StudentRepository studentRepository;
     private final AdminRepository adminRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(StudentRepository studentRepository, AdminRepository adminRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(StudentRepository studentRepository, AdminRepository adminRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtService jwtService,PasswordResetTokenRepository passwordResetTokenRepository,EmailService emailService) {
         this.studentRepository = studentRepository;
         this.adminRepository = adminRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
     }
 
 
@@ -192,5 +205,153 @@ public class AuthService {
         throw new RuntimeException(
                 "Invalid email or password"
         );
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        String email = request.getEmail();
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        email = email.trim().toLowerCase();
+
+        boolean studentExists =
+                studentRepository.findByEmail(email).isPresent();
+
+        boolean adminExists =
+                adminRepository.findByEmail(email).isPresent();
+
+        /*
+         * Do not reveal whether the email exists.
+         * This prevents account enumeration.
+         */
+
+        if (!studentExists && !adminExists) {
+            return;
+        }
+
+        // Remove old reset tokens
+        passwordResetTokenRepository.deleteByEmail(email);
+
+        String token = UUID.randomUUID().toString();
+
+        PasswordResetToken resetToken =
+                new PasswordResetToken();
+
+        resetToken.setToken(token);
+        resetToken.setEmail(email);
+        resetToken.setExpiresAt(
+                LocalDateTime.now().plusMinutes(15)
+        );
+        resetToken.setUsed(false);
+
+        passwordResetTokenRepository.save(resetToken);
+
+        emailService.sendPasswordResetEmail(
+                email,
+                token
+        );
+    }
+
+    public void resetPassword(
+            ResetPasswordRequest request
+    ) {
+
+        if (request.getToken() == null ||
+                request.getToken().trim().isEmpty()) {
+
+            throw new RuntimeException("Invalid reset token");
+        }
+
+        if (request.getPassword() == null ||
+                request.getPassword().trim().isEmpty()) {
+
+            throw new RuntimeException("Password is required");
+        }
+
+        if (!request.getPassword()
+                .equals(request.getConfirmPassword())) {
+
+            throw new RuntimeException(
+                    "Passwords do not match"
+            );
+        }
+
+        if (request.getPassword().length() < 8) {
+
+            throw new RuntimeException(
+                    "Password must contain at least 8 characters"
+            );
+        }
+
+        PasswordResetToken resetToken =
+                passwordResetTokenRepository
+                        .findByToken(request.getToken())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Invalid or expired reset link"
+                                )
+                        );
+
+        if (resetToken.isUsed()) {
+
+            throw new RuntimeException(
+                    "This reset link has already been used"
+            );
+        }
+
+        if (resetToken.getExpiresAt()
+                .isBefore(LocalDateTime.now())) {
+
+            throw new RuntimeException(
+                    "This reset link has expired"
+            );
+        }
+
+        String email = resetToken.getEmail();
+
+        Optional<Student> student =
+                studentRepository.findByEmail(email);
+
+        if (student.isPresent()) {
+
+            Student existingStudent = student.get();
+
+            existingStudent.setPassword(
+                    passwordEncoder.encode(
+                            request.getPassword()
+                    )
+            );
+
+            studentRepository.save(existingStudent);
+
+        } else {
+
+            Optional<Admin> admin =
+                    adminRepository.findByEmail(email);
+
+            if (admin.isEmpty()) {
+
+                throw new RuntimeException(
+                        "Account not found"
+                );
+            }
+
+            Admin existingAdmin = admin.get();
+
+            existingAdmin.setPassword(
+                    passwordEncoder.encode(
+                            request.getPassword()
+                    )
+            );
+
+            adminRepository.save(existingAdmin);
+        }
+
+        resetToken.setUsed(true);
+
+        passwordResetTokenRepository.save(resetToken);
     }
 }

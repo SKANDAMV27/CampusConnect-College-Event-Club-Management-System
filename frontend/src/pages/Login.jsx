@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import {
   Eye,
   EyeOff,
   LogIn,
   Mail,
   LockKeyhole,
+  GraduationCap,
+  CalendarDays,
+  Users,
+  ArrowRight,
+  ShieldCheck,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
+
 import Swal from "sweetalert2";
 
 import API_BASE_URL from "../api/api";
@@ -21,9 +30,10 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // ---------------------------------------------------------
-  // Login
-  // ---------------------------------------------------------
+  // =========================================================
+  // LOGIN
+  // =========================================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -32,7 +42,7 @@ function Login() {
         icon: "warning",
         title: "Missing Information",
         text: "Please enter your email and password.",
-        confirmButtonColor: "#16a34a",
+        confirmButtonColor: "#15803d",
       });
 
       return;
@@ -41,18 +51,21 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
+      const response = await fetch(
+        `${API_BASE_URL}/auth/login`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
-      });
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+          }),
+        }
+      );
 
       const contentType =
         response.headers.get("content-type") || "";
@@ -77,10 +90,12 @@ function Login() {
         );
       }
 
-      // -----------------------------------------------------
-      // Store authentication information
-      // -----------------------------------------------------
+      // =====================================================
+      // STORE LOGIN INFORMATION
+      // =====================================================
+
       localStorage.setItem("token", data.token);
+
       localStorage.setItem("role", data.role);
 
       localStorage.setItem(
@@ -98,9 +113,10 @@ function Login() {
 
       console.log("Login successful:", data);
 
-      // -----------------------------------------------------
-      // Success message
-      // -----------------------------------------------------
+      // =====================================================
+      // SUCCESS MESSAGE
+      // =====================================================
+
       await Swal.fire({
         icon: "success",
         title: "Login Successful!",
@@ -109,10 +125,13 @@ function Login() {
         timer: 1500,
       });
 
-      // -----------------------------------------------------
-      // Role based navigation
-      // -----------------------------------------------------
-      const role = String(data.role || "").toUpperCase();
+      // =====================================================
+      // ROLE BASED NAVIGATION
+      // =====================================================
+
+      const role = String(
+        data.role || ""
+      ).toUpperCase();
 
       if (role === "ADMIN") {
         navigate("/admin/dashboard");
@@ -123,9 +142,10 @@ function Login() {
           icon: "warning",
           title: "Unknown Role",
           text: "Your account role is not recognized.",
-          confirmButtonColor: "#16a34a",
+          confirmButtonColor: "#15803d",
         });
       }
+
     } catch (error) {
       console.error("Login error:", error);
 
@@ -136,631 +156,857 @@ function Login() {
           error.message ||
           "Invalid email or password",
         confirmButtonText: "Try Again",
-        confirmButtonColor: "#16a34a",
+        confirmButtonColor: "#15803d",
       });
+
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------------------------------------------------------
-  // Social login placeholder
-  // ---------------------------------------------------------
-  const handleSocialLogin = (provider) => {
-    Swal.fire({
-      icon: "info",
-      title: `${provider} Login`,
-      text: `${provider} authentication is not configured yet.`,
-      confirmButtonColor: "#16a34a",
-    });
+  // =========================================================
+  // FORGOT PASSWORD
+  // =========================================================
+
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
   return (
-    <div className="min-h-screen bg-white lg:flex">
+    <div className="min-h-screen bg-slate-50 lg:flex">
 
       {/* =====================================================
-          LEFT SIDE
-      ====================================================== */}
-      <div className="relative hidden min-h-screen overflow-hidden bg-[#090909] lg:flex lg:w-[60%]">
+          LEFT SIDE - CAMPUSCONNECT BRANDING
+      ===================================================== */}
 
-        {/* Background globe */}
-        <div className="absolute inset-0 overflow-hidden">
+      <section
+        className="
+          relative
+          hidden
+          min-h-screen
+          overflow-hidden
+          bg-green-900
+          lg:flex
+          lg:w-[56%]
+          xl:w-[58%]
+        "
+      >
 
-          {/* Main globe */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-950 via-green-900 to-emerald-800" />
+
+        {/* Decorative shapes */}
+
+        <div
+          className="
+            absolute
+            -right-32
+            -top-32
+            h-[420px]
+            w-[420px]
+            rounded-full
+            border-[70px]
+            border-white/5
+          "
+        />
+
+        <div
+          className="
+            absolute
+            -bottom-40
+            -left-40
+            h-[500px]
+            w-[500px]
+            rounded-full
+            border-[80px]
+            border-white/5
+          "
+        />
+
+        <div
+          className="
+            absolute
+            right-20
+            top-1/3
+            h-3
+            w-3
+            rounded-full
+            bg-green-300/60
+          "
+        />
+
+        <div
+          className="
+            absolute
+            right-36
+            top-[42%]
+            h-2
+            w-2
+            rounded-full
+            bg-white/40
+          "
+        />
+
+        {/* Main content */}
+
+        <div
+          className="
+            relative
+            z-10
+            flex
+            min-h-screen
+            w-full
+            flex-col
+            justify-between
+            px-10
+            py-10
+            xl:px-16
+            xl:py-12
+          "
+        >
+
+          {/* LOGO */}
+
+          <div className="flex items-center gap-3">
+
+            <div
+              className="
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-2xl
+                bg-white
+                shadow-lg
+              "
+            >
+              <GraduationCap
+                className="h-7 w-7 text-green-700"
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-white">
+                CampusConnect
+              </h2>
+
+              <p className="text-xs text-green-100">
+                College Community Platform
+              </p>
+            </div>
+
+          </div>
+
+          {/* HERO */}
+
+          <div className="max-w-xl">
+
+            <div
+              className="
+                mb-6
+                inline-flex
+                items-center
+                gap-2
+                rounded-full
+                border
+                border-white/10
+                bg-white/10
+                px-3
+                py-1.5
+                backdrop-blur-sm
+              "
+            >
+              <Sparkles className="h-4 w-4 text-green-300" />
+
+              <span className="text-xs font-medium text-green-50">
+                Your Campus, Connected
+              </span>
+            </div>
+
+            <h1
+              className="
+                text-4xl
+                font-bold
+                leading-[1.1]
+                tracking-tight
+                text-white
+                xl:text-6xl
+              "
+            >
+              Your Campus.
+              <br />
+
+              <span className="text-green-300">
+                Your Community.
+              </span>
+            </h1>
+
+            <p
+              className="
+                mt-6
+                max-w-lg
+                text-base
+                leading-7
+                text-green-50/80
+                xl:text-lg
+              "
+            >
+              Discover college events, participate in
+              activities, connect with your community and
+              manage your campus experience from one simple
+              platform.
+            </p>
+
+            {/* FEATURES */}
+
+            <div className="mt-8 grid max-w-lg grid-cols-2 gap-3">
+
+              <div
+                className="
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-white/10
+                  p-4
+                  backdrop-blur-sm
+                "
+              >
+
+                <div
+                  className="
+                    mb-3
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-white
+                  "
+                >
+                  <CalendarDays className="h-5 w-5 text-green-700" />
+                </div>
+
+                <p className="text-sm font-semibold text-white">
+                  College Events
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-green-100/70">
+                  Discover and register for upcoming events.
+                </p>
+
+              </div>
+
+              <div
+                className="
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-white/10
+                  p-4
+                  backdrop-blur-sm
+                "
+              >
+
+                <div
+                  className="
+                    mb-3
+                    flex
+                    h-10
+                    w-10
+                    items-center
+                    justify-center
+                    rounded-xl
+                    bg-white
+                  "
+                >
+                  <Users className="h-5 w-5 text-green-700" />
+                </div>
+
+                <p className="text-sm font-semibold text-white">
+                  Student Community
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-green-100/70">
+                  Stay connected with your college community.
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* TRUST POINTS */}
+
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
+
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-300" />
+
+                <span className="text-xs text-green-50/80">
+                  Easy Event Registration
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-300" />
+
+                <span className="text-xs text-green-50/80">
+                  Student Friendly
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* FOOTER */}
+
           <div
             className="
-              absolute
-              left-1/2
-              top-1/2
-              h-[850px]
-              w-[850px]
-              -translate-x-1/2
-              -translate-y-1/2
-              rounded-full
-              border
-              border-slate-700/40
-              bg-[radial-gradient(circle_at_35%_30%,rgba(100,116,139,0.16),rgba(15,23,42,0.05)_45%,rgba(0,0,0,0.85)_75%)]
-              shadow-[inset_-80px_-40px_180px_rgba(0,0,0,0.9),0_0_100px_rgba(30,41,59,0.18)]
+              flex
+              flex-col
+              gap-3
+              border-t
+              border-white/10
+              pt-5
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
             "
           >
 
-            {/* Latitude */}
-            <div
-              className="
-                absolute
-                left-[8%]
-                top-[28%]
-                h-[45%]
-                w-[84%]
-                rounded-[50%]
-                border
-                border-slate-600/30
-              "
-            />
+            <p className="text-xs text-green-100/60">
+              College Event & Club Management System
+            </p>
 
-            <div
-              className="
-                absolute
-                left-[13%]
-                top-[40%]
-                h-[20%]
-                w-[74%]
-                rounded-[50%]
-                border
-                border-slate-600/20
-              "
-            />
-
-            {/* Longitude */}
-            <div
-              className="
-                absolute
-                left-[30%]
-                top-[3%]
-                h-[94%]
-                w-[40%]
-                rounded-[50%]
-                border
-                border-slate-600/25
-              "
-            />
-
-            <div
-              className="
-                absolute
-                left-[43%]
-                top-[2%]
-                h-[96%]
-                w-[14%]
-                rounded-[50%]
-                border
-                border-slate-600/20
-              "
-            />
-
-            {/* Globe light points */}
-            <div className="absolute left-[25%] top-[27%] h-1 w-1 rounded-full bg-slate-300/70 shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-
-            <div className="absolute left-[58%] top-[34%] h-1 w-1 rounded-full bg-slate-300/60 shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
-
-            <div className="absolute left-[66%] top-[53%] h-1 w-1 rounded-full bg-slate-300/50 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
-
-            <div className="absolute left-[35%] top-[61%] h-1 w-1 rounded-full bg-slate-300/50 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
-
-            <div className="absolute left-[73%] top-[44%] h-1 w-1 rounded-full bg-slate-300/50 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
-
-            <div className="absolute left-[45%] top-[22%] h-1 w-1 rounded-full bg-slate-300/50 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
-
-            <div className="absolute left-[20%] top-[48%] h-1 w-1 rounded-full bg-slate-300/40 shadow-[0_0_10px_rgba(255,255,255,0.3)]" />
-          </div>
-
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-black/40" />
-
-          {/* Vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(0,0,0,0.65)_100%)]" />
-        </div>
-
-        {/* Left content */}
-        <div className="relative z-10 flex min-h-screen w-full flex-col justify-between px-16 py-14 xl:px-20">
-
-          {/* Logo */}
-          <div>
             <div className="flex items-center gap-2">
 
-              <span className="text-4xl font-bold leading-none text-white">
-                C
+              <span className="h-2 w-2 rounded-full bg-green-300" />
+
+              <span className="text-xs font-medium text-green-100/70">
+                CampusConnect Portal
               </span>
 
-              <span className="h-8 w-5 rounded-sm bg-green-500" />
-
             </div>
-          </div>
-
-          {/* Welcome section */}
-          <div className="mb-16 max-w-xl">
-
-            <p className="mb-3 text-xl font-medium text-slate-300">
-              Welcome to
-            </p>
-
-            <h2 className="text-5xl font-bold tracking-tight text-white xl:text-6xl">
-              CampusConnect
-            </h2>
-
-            <p className="mt-6 max-w-md text-base leading-7 text-slate-400">
-              Your college community platform for events,
-              clubs, announcements and student activities.
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                Swal.fire({
-                  icon: "info",
-                  title: "CampusConnect",
-                  text:
-                    "Connect with your college community and stay updated with campus activities.",
-                  confirmButtonColor: "#16a34a",
-                })
-              }
-              className="mt-4 text-sm font-medium text-green-400 transition hover:text-green-300"
-            >
-              Know more
-            </button>
 
           </div>
+
         </div>
-      </div>
+
+      </section>
 
       {/* =====================================================
-          RIGHT SIDE
-      ====================================================== */}
-      <div className="flex min-h-screen w-full items-center justify-center bg-white px-6 py-10 sm:px-10 lg:w-[40%] lg:px-12 xl:px-16">
+          RIGHT SIDE - LOGIN
+      ===================================================== */}
 
-        <div className="w-full max-w-[520px]">
+      <section
+        className="
+          flex
+          min-h-screen
+          w-full
+          items-center
+          justify-center
+          bg-slate-50
+          px-5
+          py-8
+          sm:px-8
+          lg:w-[44%]
+          xl:w-[42%]
+          xl:px-12
+        "
+      >
 
-          {/* Heading */}
-          <div className="mb-8">
+        <div className="w-full max-w-md">
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              Welcome back!
-            </h1>
+          {/* MOBILE LOGO */}
 
-            <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Login to your account
-            </h2>
+          <div
+            className="
+              mb-8
+              flex
+              items-center
+              gap-3
+              lg:hidden
+            "
+          >
 
-            <p className="mt-5 text-sm text-slate-600 sm:text-base">
-              It's nice to see you again. Ready to connect?
-            </p>
+            <div
+              className="
+                flex
+                h-11
+                w-11
+                items-center
+                justify-center
+                rounded-xl
+                bg-green-700
+                shadow-sm
+              "
+            >
+              <GraduationCap
+                className="h-6 w-6 text-white"
+              />
+            </div>
+
+            <div>
+
+              <p className="text-lg font-bold text-slate-900">
+                CampusConnect
+              </p>
+
+              <p className="text-xs text-slate-500">
+                College Community Platform
+              </p>
+
+            </div>
 
           </div>
 
-          {/* =================================================
-              LOGIN FORM
-          ================================================== */}
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5"
+          {/* LOGIN CARD */}
+
+          <div
+            className="
+              rounded-3xl
+              border
+              border-slate-200
+              bg-white
+              p-6
+              shadow-xl
+              shadow-slate-200/60
+              sm:p-8
+            "
           >
 
-            {/* Email */}
-            <div>
+            {/* HEADER */}
 
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-slate-700"
+            <div className="mb-7">
+
+              <div
+                className="
+                  mb-5
+                  flex
+                  h-12
+                  w-12
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  bg-green-50
+                "
               >
-                Email
-              </label>
-
-              <div className="relative">
-
-                <Mail
-                  size={18}
-                  className="
-                    pointer-events-none
-                    absolute
-                    left-4
-                    top-1/2
-                    -translate-y-1/2
-                    text-slate-400
-                  "
-                />
-
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  placeholder="Enter your email"
-                  autoComplete="email"
-                  required
-                  disabled={loading}
-                  className="
-                    h-12
-                    w-full
-                    rounded-lg
-                    border
-                    border-slate-300
-                    bg-white
-                    pl-11
-                    pr-4
-                    text-sm
-                    text-slate-900
-                    outline-none
-                    transition
-                    placeholder:text-slate-400
-                    focus:border-green-600
-                    focus:ring-2
-                    focus:ring-green-100
-                    disabled:cursor-not-allowed
-                    disabled:bg-slate-100
-                  "
-                />
-
+                <ShieldCheck className="h-6 w-6 text-green-700" />
               </div>
+
+              <p className="mb-2 text-sm font-semibold text-green-700">
+                CampusConnect Portal
+              </p>
+
+              <h1
+                className="
+                  text-2xl
+                  font-bold
+                  tracking-tight
+                  text-slate-900
+                  sm:text-3xl
+                "
+              >
+                Welcome back
+              </h1>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Sign in to access your college community.
+              </p>
+
             </div>
 
-            {/* Password */}
-            <div>
+            {/* LOGIN FORM */}
 
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Password
-              </label>
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
 
-              <div className="relative">
+              {/* EMAIL */}
 
-                <LockKeyhole
-                  size={18}
+              <div>
+
+                <label
+                  htmlFor="email"
                   className="
-                    pointer-events-none
-                    absolute
-                    left-4
-                    top-1/2
-                    -translate-y-1/2
-                    text-slate-400
-                  "
-                />
-
-                <input
-                  id="password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  required
-                  disabled={loading}
-                  className="
-                    h-12
-                    w-full
-                    rounded-lg
-                    border
-                    border-slate-300
-                    bg-white
-                    pl-11
-                    pr-12
+                    mb-2
+                    block
                     text-sm
-                    text-slate-900
-                    outline-none
-                    transition
-                    placeholder:text-slate-400
-                    focus:border-green-600
-                    focus:ring-2
-                    focus:ring-green-100
-                    disabled:cursor-not-allowed
-                    disabled:bg-slate-100
+                    font-semibold
+                    text-slate-700
                   "
-                />
+                >
+                  Email Address
+                </label>
+
+                <div className="relative">
+
+                  <Mail
+                    size={18}
+                    className="
+                      pointer-events-none
+                      absolute
+                      left-4
+                      top-1/2
+                      -translate-y-1/2
+                      text-slate-400
+                    "
+                  />
+
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                    required
+                    disabled={loading}
+                    className="
+                      h-12
+                      w-full
+                      rounded-xl
+                      border
+                      border-slate-300
+                      bg-white
+                      pl-11
+                      pr-4
+                      text-sm
+                      text-slate-900
+                      outline-none
+                      transition
+                      duration-200
+                      placeholder:text-slate-400
+                      hover:border-slate-400
+                      focus:border-green-600
+                      focus:ring-4
+                      focus:ring-green-100
+                      disabled:cursor-not-allowed
+                      disabled:bg-slate-100
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+              {/* PASSWORD */}
+
+              <div>
+
+                <label
+                  htmlFor="password"
+                  className="
+                    mb-2
+                    block
+                    text-sm
+                    font-semibold
+                    text-slate-700
+                  "
+                >
+                  Password
+                </label>
+
+                <div className="relative">
+
+                  <LockKeyhole
+                    size={18}
+                    className="
+                      pointer-events-none
+                      absolute
+                      left-4
+                      top-1/2
+                      -translate-y-1/2
+                      text-slate-400
+                    "
+                  />
+
+                  <input
+                    id="password"
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    value={password}
+                    onChange={(e) =>
+                      setPassword(e.target.value)
+                    }
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    required
+                    disabled={loading}
+                    className="
+                      h-12
+                      w-full
+                      rounded-xl
+                      border
+                      border-slate-300
+                      bg-white
+                      pl-11
+                      pr-12
+                      text-sm
+                      text-slate-900
+                      outline-none
+                      transition
+                      duration-200
+                      placeholder:text-slate-400
+                      hover:border-slate-400
+                      focus:border-green-600
+                      focus:ring-4
+                      focus:ring-green-100
+                      disabled:cursor-not-allowed
+                      disabled:bg-slate-100
+                    "
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        (previous) => !previous
+                      )
+                    }
+                    disabled={loading}
+                    className="
+                      absolute
+                      right-3
+                      top-1/2
+                      -translate-y-1/2
+                      rounded-lg
+                      p-1.5
+                      text-slate-400
+                      transition
+                      hover:bg-slate-100
+                      hover:text-slate-700
+                    "
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+
+                </div>
+
+              </div>
+
+              {/* REMEMBER + FORGOT */}
+
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-3
+                "
+              >
+
+                <label
+                  className="
+                    flex
+                    cursor-pointer
+                    items-center
+                    gap-2
+                    text-sm
+                    text-slate-600
+                  "
+                >
+
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) =>
+                      setRememberMe(
+                        e.target.checked
+                      )
+                    }
+                    className="
+                      h-4
+                      w-4
+                      rounded
+                      border-slate-300
+                      text-green-600
+                      accent-green-600
+                      focus:ring-green-500
+                    "
+                  />
+
+                  <span>
+                    Remember me
+                  </span>
+
+                </label>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowPassword(
-                      (previous) => !previous
-                    )
-                  }
+                  onClick={handleForgotPassword}
                   disabled={loading}
                   className="
-                    absolute
-                    right-3
-                    top-1/2
-                    -translate-y-1/2
-                    rounded-md
-                    p-1.5
-                    text-slate-400
+                    text-sm
+                    font-semibold
+                    text-green-700
                     transition
-                    hover:bg-slate-100
-                    hover:text-slate-700
+                    hover:text-green-800
+                    hover:underline
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
                   "
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
+                  Forgot password?
                 </button>
 
               </div>
+
+              {/* LOGIN BUTTON */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="
+                  group
+                  flex
+                  h-12
+                  w-full
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-green-700
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-lg
+                  shadow-green-700/20
+                  transition
+                  duration-200
+                  hover:bg-green-800
+                  hover:shadow-green-700/30
+                  focus:outline-none
+                  focus:ring-4
+                  focus:ring-green-200
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              >
+
+                {loading ? (
+                  <>
+                    <span
+                      className="
+                        h-4
+                        w-4
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-white/30
+                        border-t-white
+                      "
+                    />
+
+                    Signing In...
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={18} />
+
+                    Log In
+
+                    <ArrowRight
+                      size={17}
+                      className="
+                        transition
+                        duration-200
+                        group-hover:translate-x-1
+                      "
+                    />
+                  </>
+                )}
+
+              </button>
+
+            </form>
+
+            {/* REGISTER */}
+
+            <div className="my-7 flex items-center gap-3">
+
+              <div className="h-px flex-1 bg-slate-200" />
+
+              <span className="text-xs font-medium text-slate-400">
+                OR
+              </span>
+
+              <div className="h-px flex-1 bg-slate-200" />
+
             </div>
 
-            {/* Login */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="
-                flex
-                h-12
-                w-full
-                items-center
-                justify-center
-                gap-2
-                rounded-lg
-                bg-green-600
-                text-sm
-                font-semibold
-                text-white
-                shadow-sm
-                transition
-                hover:bg-green-700
-                focus:outline-none
-                focus:ring-2
-                focus:ring-green-500
-                focus:ring-offset-2
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
-            >
+            <div className="text-center">
 
-              <LogIn size={18} />
+              <p className="text-sm text-slate-600">
 
-              {loading
-                ? "Signing In..."
-                : "Log In"}
+                Don't have an account?{" "}
 
-            </button>
+                <Link
+                  to="/register"
+                  className="
+                    font-semibold
+                    text-green-700
+                    transition
+                    hover:text-green-800
+                    hover:underline
+                  "
+                >
+                  Create an account
+                </Link>
 
-          </form>
+              </p>
 
-          {/* Remember me / Forgot */}
-          <div className="mt-4 flex items-center justify-between">
-
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
-
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) =>
-                  setRememberMe(e.target.checked)
-                }
-                className="
-                  h-4
-                  w-4
-                  rounded
-                  border-slate-300
-                  text-green-600
-                  focus:ring-green-500
-                "
-              />
-
-              <span>
-                Remember me
-              </span>
-
-            </label>
-
-            <button
-              type="button"
-              onClick={() =>
-                Swal.fire({
-                  icon: "info",
-                  title: "Forgot password?",
-                  text:
-                    "Password reset functionality can be added to CampusConnect.",
-                  confirmButtonColor: "#16a34a",
-                })
-              }
-              className="
-                text-sm
-                font-medium
-                text-blue-600
-                transition
-                hover:text-blue-700
-                hover:underline
-              "
-            >
-              Forgot password?
-            </button>
+            </div>
 
           </div>
 
-          {/* Divider */}
-          <div className="my-8 flex items-center gap-4">
+          {/* SECURITY */}
 
-            <div className="h-px flex-1 bg-slate-300" />
-
-            <span className="text-sm text-slate-400">
-              or
-            </span>
-
-            <div className="h-px flex-1 bg-slate-300" />
-
-          </div>
-
-          {/* Google */}
-          <button
-            type="button"
-            onClick={() =>
-              handleSocialLogin("Google")
-            }
+          <div
             className="
+              mt-5
               flex
-              h-12
-              w-full
               items-center
               justify-center
-              gap-3
-              rounded-lg
-              border
-              border-slate-300
-              bg-white
-              text-sm
-              font-semibold
-              text-slate-800
-              transition
-              hover:bg-slate-50
+              gap-2
+              text-xs
+              text-slate-400
             "
           >
+            <ShieldCheck size={14} />
 
-            <span className="text-lg font-bold text-[#4285F4]">
-              G
+            <span>
+              Secure CampusConnect authentication
             </span>
-
-            Continue with Google
-
-          </button>
-
-          {/* LinkedIn / GitHub */}
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-            {/* LinkedIn */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSocialLogin("LinkedIn")
-              }
-              className="
-                flex
-                h-12
-                items-center
-                justify-center
-                gap-2
-                rounded-lg
-                border
-                border-slate-300
-                bg-white
-                text-sm
-                font-semibold
-                text-slate-800
-                transition
-                hover:bg-slate-50
-              "
-            >
-
-              <span
-                className="
-                  flex
-                  h-5
-                  w-5
-                  items-center
-                  justify-center
-                  rounded-sm
-                  bg-[#0A66C2]
-                  text-xs
-                  font-bold
-                  text-white
-                "
-              >
-                in
-              </span>
-
-              LinkedIn
-
-            </button>
-
-            {/* GitHub */}
-            <button
-              type="button"
-              onClick={() =>
-                handleSocialLogin("GitHub")
-              }
-              className="
-                flex
-                h-12
-                items-center
-                justify-center
-                gap-2
-                rounded-lg
-                border
-                border-slate-300
-                bg-white
-                text-sm
-                font-semibold
-                text-slate-800
-                transition
-                hover:bg-slate-50
-              "
-            >
-
-              <span
-                className="
-                  flex
-                  h-5
-                  w-5
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-slate-900
-                  text-[10px]
-                  font-bold
-                  text-white
-                "
-              >
-                GH
-              </span>
-
-              GitHub
-
-            </button>
-
           </div>
 
-          {/* Register */}
-          <p className="mt-10 text-center text-sm text-slate-600">
+          {/* FOOTER */}
 
-            Don't have an account?{" "}
-
-            <Link
-              to="/register"
-              className="
-                font-medium
-                text-blue-600
-                transition
-                hover:text-blue-700
-                hover:underline
-              "
-            >
-              Sign up
-            </Link>
-
-          </p>
-
-          {/* Footer */}
-          <p className="mt-8 text-center text-xs text-slate-400">
+          <p className="mt-5 text-center text-xs text-slate-400">
             © {new Date().getFullYear()} CampusConnect.
             All rights reserved.
           </p>
 
         </div>
-      </div>
+
+      </section>
+
     </div>
   );
 }

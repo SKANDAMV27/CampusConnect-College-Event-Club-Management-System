@@ -12,6 +12,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminRegister from "./pages/AdminRegister";
 
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
 import StudentLayout from "./layouts/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import Events from "./pages/student/Events";
@@ -35,16 +38,32 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Default */}
+        {/* =====================================================
+            DEFAULT
+        ===================================================== */}
+
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
         />
 
-        {/* Authentication */}
+        {/* =====================================================
+            AUTHENTICATION
+        ===================================================== */}
+
         <Route
           path="/login"
           element={<Login />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
+        <Route
+          path="/reset-password"
+          element={<ResetPassword />}
         />
 
         <Route
@@ -67,7 +86,10 @@ function App() {
           }
         />
 
-        {/* Public */}
+        {/* =====================================================
+            PUBLIC
+        ===================================================== */}
+
         <Route
           path="/home"
           element={
@@ -78,11 +100,12 @@ function App() {
           }
         />
 
-        {/* ========================= */}
-        {/* STUDENT ROUTES */}
-        {/* ========================= */}
+        {/* =====================================================
+            STUDENT ROUTES
+        ===================================================== */}
 
         <Route element={<StudentLayout />}>
+
           <Route
             path="/dashboard"
             element={<StudentDashboard />}
@@ -107,13 +130,15 @@ function App() {
             path="/profile"
             element={<Profile />}
           />
+
         </Route>
 
-        {/* ========================= */}
-        {/* ADMIN ROUTES */}
-        {/* ========================= */}
+        {/* =====================================================
+            ADMIN ROUTES
+        ===================================================== */}
 
         <Route element={<ProtectedRoute role="ADMIN" />}>
+
           <Route element={<AdminLayout />}>
 
             <Route
@@ -152,6 +177,7 @@ function App() {
             />
 
           </Route>
+
         </Route>
 
       </Routes>
