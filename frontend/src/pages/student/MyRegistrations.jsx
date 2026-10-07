@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import {
   CalendarDays,
   MapPin,
@@ -6,8 +7,12 @@ import {
   XCircle,
   Search,
   ClipboardList,
+  MessageSquareText,
+  CheckCircle2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+
+import { Link, useNavigate } from "react-router-dom";
+
 import Swal from "sweetalert2";
 
 import {
@@ -16,6 +21,8 @@ import {
 } from "../../api/studentApi";
 
 function MyRegistrations() {
+  const navigate = useNavigate();
+
   const [registrations, setRegistrations] =
     useState([]);
 
@@ -25,13 +32,13 @@ function MyRegistrations() {
   const [search, setSearch] =
     useState("");
 
-  useEffect(() => {
-    loadRegistrations();
-  }, []);
-
   /* =========================================================
      LOAD REGISTRATIONS
   ========================================================= */
+
+  useEffect(() => {
+    loadRegistrations();
+  }, []);
 
   const loadRegistrations = async () => {
     try {
@@ -40,15 +47,27 @@ function MyRegistrations() {
       const data =
         await getMyRegistrations();
 
-      setRegistrations(data || []);
+      setRegistrations(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+
     } catch (error) {
+      console.error(
+        "Failed to load registrations:",
+        error
+      );
+
       Swal.fire({
         icon: "error",
         title: "Unable to load registrations",
         text:
-          error.message ||
+          error?.message ||
           "Something went wrong.",
+        confirmButtonColor: "#4f46e5",
       });
+
     } finally {
       setLoading(false);
     }
@@ -61,6 +80,7 @@ function MyRegistrations() {
   const handleCancel = async (
     registrationId
   ) => {
+
     const confirmation =
       await Swal.fire({
         title: "Cancel registration?",
@@ -71,6 +91,7 @@ function MyRegistrations() {
         confirmButtonText: "Yes, cancel",
         cancelButtonText: "Keep registration",
         confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#64748b",
       });
 
     if (!confirmation.isConfirmed) {
@@ -78,6 +99,7 @@ function MyRegistrations() {
     }
 
     try {
+
       await cancelRegistration(
         registrationId
       );
@@ -91,15 +113,48 @@ function MyRegistrations() {
       });
 
       await loadRegistrations();
+
     } catch (error) {
+
+      console.error(
+        "Failed to cancel registration:",
+        error
+      );
+
       Swal.fire({
         icon: "error",
         title: "Unable to cancel",
         text:
-          error.message ||
+          error?.message ||
           "Something went wrong.",
+        confirmButtonColor: "#4f46e5",
       });
     }
+  };
+
+  /* =========================================================
+     OPEN FEEDBACK
+  ========================================================= */
+
+  const handleFeedback = (
+    eventId
+  ) => {
+
+    if (!eventId) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Event",
+        text:
+          "Unable to open feedback for this event.",
+        confirmButtonColor: "#4f46e5",
+      });
+
+      return;
+    }
+
+    navigate(
+      `/events/${eventId}/feedback`
+    );
   };
 
   /* =========================================================
@@ -107,20 +162,27 @@ function MyRegistrations() {
   ========================================================= */
 
   const formatDate = (date) => {
+
     if (!date) {
       return "-";
     }
 
-    return new Date(
-      `${date}T00:00:00`
-    ).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    try {
+
+      return new Date(
+        `${date}T00:00:00`
+      ).toLocaleDateString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }
+      );
+
+    } catch {
+      return date;
+    }
   };
 
   /* =========================================================
@@ -128,26 +190,153 @@ function MyRegistrations() {
   ========================================================= */
 
   const formatTime = (time) => {
+
     if (!time) {
       return "-";
     }
 
-    const [hours, minutes] =
-      time.split(":");
+    try {
 
-    const date = new Date();
+      const [
+        hours,
+        minutes,
+      ] = time.split(":");
 
-    date.setHours(
-      Number(hours),
-      Number(minutes)
-    );
+      const date =
+        new Date();
 
-    return date.toLocaleTimeString(
-      "en-IN",
-      {
-        hour: "2-digit",
-        minute: "2-digit",
+      date.setHours(
+        Number(hours),
+        Number(minutes),
+        0,
+        0
+      );
+
+      return date.toLocaleTimeString(
+        "en-IN",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+
+    } catch {
+      return time;
+    }
+  };
+
+  /* =========================================================
+     FORMAT REGISTERED DATE
+  ========================================================= */
+
+  const formatRegisteredDate = (
+    date
+  ) => {
+
+    if (!date) {
+      return "-";
+    }
+
+    try {
+
+      return new Date(
+        date
+      ).toLocaleString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+
+    } catch {
+      return date;
+    }
+  };
+
+  /* =========================================================
+     CHECK EVENT COMPLETED
+
+     This is a frontend fallback.
+
+     Backend should preferably return:
+       eventCompleted
+       feedbackSubmitted
+  ========================================================= */
+
+  const isEventCompleted = (
+    registration
+  ) => {
+
+    /*
+     * Use backend value when available.
+     */
+    if (
+      typeof registration.eventCompleted ===
+      "boolean"
+    ) {
+      return registration.eventCompleted;
+    }
+
+    /*
+     * Fallback based on event date/time.
+     */
+
+    if (!registration.eventDate) {
+      return false;
+    }
+
+    try {
+
+      const eventDate =
+        registration.eventDate;
+
+      const endTime =
+        registration.endTime ||
+        registration.startTime;
+
+      if (!endTime) {
+
+        const endOfDay =
+          new Date(
+            `${eventDate}T23:59:59`
+          );
+
+        return (
+          new Date() >
+          endOfDay
+        );
       }
+
+      const eventEnd =
+        new Date(
+          `${eventDate}T${endTime}`
+        );
+
+      return (
+        new Date() >
+        eventEnd
+      );
+
+    } catch {
+      return false;
+    }
+  };
+
+  /* =========================================================
+     CHECK FEEDBACK SUBMITTED
+  ========================================================= */
+
+  const isFeedbackSubmitted = (
+    registration
+  ) => {
+
+    return (
+      registration.feedbackSubmitted ===
+      true
     );
   };
 
@@ -157,8 +346,11 @@ function MyRegistrations() {
 
   const filteredRegistrations =
     useMemo(() => {
+
       const searchValue =
-        search.trim().toLowerCase();
+        search
+          .trim()
+          .toLowerCase();
 
       if (!searchValue) {
         return registrations;
@@ -166,6 +358,7 @@ function MyRegistrations() {
 
       return registrations.filter(
         (registration) => {
+
           const eventTitle =
             registration.eventTitle ||
             "";
@@ -186,18 +379,22 @@ function MyRegistrations() {
             eventTitle
               .toLowerCase()
               .includes(searchValue) ||
+
             venue
               .toLowerCase()
               .includes(searchValue) ||
+
             status
               .toLowerCase()
               .includes(searchValue) ||
+
             eventDate
               .toLowerCase()
               .includes(searchValue)
           );
         }
       );
+
     }, [
       registrations,
       search,
@@ -208,23 +405,57 @@ function MyRegistrations() {
   ========================================================= */
 
   if (loading) {
+
     return (
       <div
         className="
-          min-h-[500px]
           flex
+          min-h-[500px]
           items-center
           justify-center
           text-slate-500
         "
       >
-        Loading registrations...
+
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+          "
+        >
+
+          <span
+            className="
+              h-5
+              w-5
+              animate-spin
+              rounded-full
+              border-2
+              border-slate-300
+              border-t-indigo-600
+            "
+          />
+
+          Loading registrations...
+
+        </div>
+
       </div>
     );
   }
 
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div
+      className="
+        mx-auto
+        max-w-[1400px]
+      "
+    >
 
       {/* =====================================================
           PAGE HEADER
@@ -278,6 +509,7 @@ function MyRegistrations() {
             text-slate-500
           "
         >
+
           <ClipboardList
             size={18}
           />
@@ -287,6 +519,7 @@ function MyRegistrations() {
           {registrations.length !== 1
             ? "s"
             : ""}
+
         </div>
 
       </div>
@@ -334,7 +567,9 @@ function MyRegistrations() {
                 event.target.value
               )
             }
-            placeholder="Search registrations by event, venue, status or date..."
+            placeholder="
+              Search registrations by event, venue, status or date...
+            "
             className="
               h-11
               w-full
@@ -356,6 +591,7 @@ function MyRegistrations() {
           />
 
           {search && (
+
             <button
               type="button"
               onClick={() =>
@@ -371,15 +607,19 @@ function MyRegistrations() {
               "
               aria-label="Clear search"
             >
+
               <XCircle
                 size={18}
               />
+
             </button>
+
           )}
 
         </div>
 
         {search && (
+
           <p
             className="
               mt-3
@@ -387,16 +627,31 @@ function MyRegistrations() {
               text-slate-500
             "
           >
+
             Showing{" "}
-            <span className="font-semibold">
+
+            <span
+              className="
+                font-semibold
+              "
+            >
               {filteredRegistrations.length}
-            </span>{" "}
-            of{" "}
-            <span className="font-semibold">
+            </span>
+
+            {" "}of{" "}
+
+            <span
+              className="
+                font-semibold
+              "
+            >
               {registrations.length}
-            </span>{" "}
-            registrations
+            </span>
+
+            {" "}registrations
+
           </p>
+
         )}
 
       </div>
@@ -468,17 +723,18 @@ function MyRegistrations() {
               hover:bg-indigo-700
             "
           >
+
             Browse Events
 
             <CalendarDays
               size={17}
             />
+
           </Link>
 
         </div>
 
-      ) : filteredRegistrations.length ===
-        0 ? (
+      ) : filteredRegistrations.length === 0 ? (
 
         /* ===================================================
            NO SEARCH RESULTS
@@ -521,10 +777,15 @@ function MyRegistrations() {
               text-slate-500
             "
           >
-            No registration matches
-            "<span className="font-medium">
+
+            No registration matches{" "}
+
+            "<span
+              className="font-medium"
+            >
               {search}
             </span>".
+
           </p>
 
           <button
@@ -555,16 +816,34 @@ function MyRegistrations() {
            REGISTRATION LIST
         =================================================== */
 
-        <div className="space-y-4">
+        <div
+          className="
+            space-y-4
+          "
+        >
 
           {filteredRegistrations.map(
             (registration) => {
 
               const cancelled =
-                registration.status ===
+                String(
+                  registration.status ||
+                  ""
+                ).toUpperCase() ===
                 "CANCELLED";
 
+              const completed =
+                isEventCompleted(
+                  registration
+                );
+
+              const feedbackSubmitted =
+                isFeedbackSubmitted(
+                  registration
+                );
+
               return (
+
                 <div
                   key={
                     registration.registrationId
@@ -579,6 +858,10 @@ function MyRegistrations() {
                     hover:border-slate-400
                   "
                 >
+
+                  {/* =================================================
+                      EVENT INFORMATION + ACTIONS
+                  ================================================= */}
 
                   <div
                     className="
@@ -595,7 +878,12 @@ function MyRegistrations() {
                         EVENT INFORMATION
                     ================================================= */}
 
-                    <div className="min-w-0">
+                    <div
+                      className="
+                        min-w-0
+                        flex-1
+                      "
+                    >
 
                       <div
                         className="
@@ -616,9 +904,12 @@ function MyRegistrations() {
                             hover:text-indigo-600
                           "
                         >
+
                           {registration.eventTitle}
+
                         </Link>
 
+                        {/* REGISTRATION STATUS */}
 
                         <span
                           className={`
@@ -634,13 +925,47 @@ function MyRegistrations() {
                             }
                           `}
                         >
+
                           {registration.status}
+
                         </span>
+
+                        {/* EVENT COMPLETED */}
+
+                        {!cancelled &&
+                          completed && (
+
+                            <span
+                              className="
+                                inline-flex
+                                items-center
+                                gap-1
+                                rounded-full
+                                bg-blue-100
+                                px-3
+                                py-1
+                                text-xs
+                                font-semibold
+                                text-blue-700
+                              "
+                            >
+
+                              <CheckCircle2
+                                size={13}
+                              />
+
+                              Event Completed
+
+                            </span>
+
+                          )}
 
                       </div>
 
 
-                      {/* EVENT DETAILS */}
+                      {/* =================================================
+                          EVENT DETAILS
+                      ================================================= */}
 
                       <div
                         className="
@@ -653,6 +978,8 @@ function MyRegistrations() {
                           text-slate-600
                         "
                       >
+
+                        {/* DATE */}
 
                         <span
                           className="
@@ -677,6 +1004,8 @@ function MyRegistrations() {
                         </span>
 
 
+                        {/* TIME */}
+
                         <span
                           className="
                             flex
@@ -697,8 +1026,19 @@ function MyRegistrations() {
                             registration.startTime
                           )}
 
+                          {registration.endTime && (
+                            <>
+                              {" - "}
+                              {formatTime(
+                                registration.endTime
+                              )}
+                            </>
+                          )}
+
                         </span>
 
+
+                        {/* VENUE */}
 
                         <span
                           className="
@@ -727,46 +1067,230 @@ function MyRegistrations() {
 
 
                     {/* =================================================
-                        CANCEL BUTTON
+                        ACTIONS
                     ================================================= */}
 
-                    {!cancelled && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleCancel(
-                            registration.registrationId
-                          )
-                        }
+                    <div
+                      className="
+                        flex
+                        shrink-0
+                        flex-col
+                        gap-2
+                        sm:flex-row
+                        md:flex-col
+                        lg:flex-row
+                      "
+                    >
+
+                      {/* =================================================
+                          FEEDBACK SUBMITTED
+                      ================================================= */}
+
+                      {!cancelled &&
+                        completed &&
+                        feedbackSubmitted && (
+
+                          <div
+                            className="
+                              inline-flex
+                              items-center
+                              justify-center
+                              gap-2
+                              rounded-lg
+                              bg-green-50
+                              px-4
+                              py-2.5
+                              text-sm
+                              font-medium
+                              text-green-700
+                            "
+                          >
+
+                            <CheckCircle2
+                              className="h-4 w-4"
+                            />
+
+                            Feedback Submitted
+
+                          </div>
+
+                        )}
+
+
+                      {/* =================================================
+                          GIVE FEEDBACK
+                      ================================================= */}
+
+                      {!cancelled &&
+                        completed &&
+                        !feedbackSubmitted && (
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleFeedback(
+                                registration.eventId
+                              )
+                            }
+                            className="
+                              inline-flex
+                              shrink-0
+                              items-center
+                              justify-center
+                              gap-2
+                              rounded-lg
+                              bg-indigo-600
+                              px-4
+                              py-2.5
+                              text-sm
+                              font-medium
+                              text-white
+                              transition
+                              hover:bg-indigo-700
+                              focus:outline-none
+                              focus:ring-2
+                              focus:ring-indigo-500
+                              focus:ring-offset-2
+                            "
+                          >
+
+                            <MessageSquareText
+                              className="h-4 w-4"
+                            />
+
+                            Give Feedback
+
+                          </button>
+
+                        )}
+
+
+                      {/* =================================================
+                          CANCEL REGISTRATION
+
+                          Only show if:
+                          - Not cancelled
+                          - Event not completed
+                      ================================================= */}
+
+                      {!cancelled &&
+                        !completed && (
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleCancel(
+                                registration.registrationId
+                              )
+                            }
+                            className="
+                              inline-flex
+                              shrink-0
+                              items-center
+                              justify-center
+                              gap-2
+                              rounded-lg
+                              border
+                              border-red-200
+                              px-4
+                              py-2.5
+                              text-sm
+                              font-medium
+                              text-red-600
+                              transition
+                              hover:bg-red-50
+                              focus:outline-none
+                              focus:ring-2
+                              focus:ring-red-500
+                              focus:ring-offset-2
+                            "
+                          >
+
+                            <XCircle
+                              className="h-4 w-4"
+                            />
+
+                            Cancel Registration
+
+                          </button>
+
+                        )}
+
+                    </div>
+
+                  </div>
+
+
+                  {/* =================================================
+                      FEEDBACK INFORMATION
+                  ================================================= */}
+
+                  {!cancelled &&
+                    completed &&
+                    !feedbackSubmitted && (
+
+                      <div
                         className="
-                          flex
-                          shrink-0
-                          items-center
-                          justify-center
-                          gap-2
+                          mt-5
                           rounded-lg
                           border
-                          border-red-200
+                          border-indigo-100
+                          bg-indigo-50
                           px-4
-                          py-2.5
-                          text-sm
-                          font-medium
-                          text-red-600
-                          transition
-                          hover:bg-red-50
+                          py-3
                         "
                       >
 
-                        <XCircle
-                          className="h-4 w-4"
-                        />
+                        <div
+                          className="
+                            flex
+                            items-start
+                            gap-3
+                          "
+                        >
 
-                        Cancel Registration
+                          <MessageSquareText
+                            className="
+                              mt-0.5
+                              h-4
+                              w-4
+                              shrink-0
+                              text-indigo-600
+                            "
+                          />
 
-                      </button>
+                          <div>
+
+                            <p
+                              className="
+                                text-sm
+                                font-medium
+                                text-indigo-900
+                              "
+                            >
+                              Event completed
+                            </p>
+
+                            <p
+                              className="
+                                mt-1
+                                text-xs
+                                leading-5
+                                text-indigo-700
+                              "
+                            >
+                              Please take a moment
+                              to rate your experience
+                              and share your feedback.
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
                     )}
-
-                  </div>
 
 
                   {/* =================================================
@@ -792,18 +1316,17 @@ function MyRegistrations() {
                         text-slate-600
                       "
                     >
-                      {registration.registeredAt
-                        ? new Date(
-                            registration.registeredAt
-                          ).toLocaleString(
-                            "en-IN"
-                          )
-                        : "-"}
+
+                      {formatRegisteredDate(
+                        registration.registeredAt
+                      )}
+
                     </span>
 
                   </div>
 
                 </div>
+
               );
             }
           )}

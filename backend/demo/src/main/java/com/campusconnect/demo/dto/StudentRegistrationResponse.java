@@ -1,29 +1,33 @@
 package com.campusconnect.demo.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Data
-@AllArgsConstructor
-public class StudentRegistrationResponse {
 
-    private Long registrationId;
+public record StudentRegistrationResponse(
 
-    private Long eventId;
+        Long registrationId,
 
-    private String eventTitle;
+        Long eventId,
 
-    private LocalDate eventDate;
+        String eventTitle,
 
-    private LocalTime startTime;
+        LocalDate eventDate,
 
-    private String venue;
+        LocalTime startTime,
 
-    private LocalDateTime registeredAt;
+        LocalTime endTime,
 
-    private String status;
+        String venue,
+
+        LocalDateTime registeredAt,
+
+        String status,
+
+        boolean eventCompleted,
+
+        boolean feedbackSubmitted
+
+) {
 }

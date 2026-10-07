@@ -1,10 +1,8 @@
 package com.campusconnect.demo.controller;
 
-import com.campusconnect.demo.dto.StudentEventResponse;
-import com.campusconnect.demo.dto.StudentProfileResponse;
-import com.campusconnect.demo.dto.StudentProfileUpdateRequest;
-import com.campusconnect.demo.dto.StudentRegistrationResponse;
+import com.campusconnect.demo.dto.*;
 import com.campusconnect.demo.entity.Event;
+import com.campusconnect.demo.entity.EventFeedback;
 import com.campusconnect.demo.entity.EventRegistration;
 import com.campusconnect.demo.entity.Student;
 import com.campusconnect.demo.repository.EventRegistrationRepository;
@@ -22,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import com.campusconnect.demo.repository.EventFeedbackRepository;
+
 @RestController
 @RequestMapping("/api/student")
 @RequiredArgsConstructor
@@ -30,6 +30,7 @@ public class StudentController {
     private final StudentRepository studentRepository;
     private final EventRepository eventRepository;
     private final EventRegistrationRepository registrationRepository;
+    private final EventFeedbackRepository feedbackRepository;
 
     // =========================================================
     // PROFILE
@@ -353,10 +354,6 @@ public class StudentController {
         );
     }
 
-    // =========================================================
-    // MY REGISTRATIONS
-    // =========================================================
-
     @GetMapping("/registrations")
     public ResponseEntity<?> getMyRegistrations(
             Authentication authentication
@@ -372,21 +369,258 @@ public class StudentController {
 
         List<StudentRegistrationResponse> response =
                 registrations.stream()
-                        .map(registration ->
-                                new StudentRegistrationResponse(
-                                        registration.getId(),
-                                        registration.getEvent().getId(),
-                                        registration.getEvent().getTitle(),
-                                        registration.getEvent().getEventDate(),
-                                        registration.getEvent().getStartTime(),
-                                        registration.getEvent().getVenue(),
-                                        registration.getRegisteredAt(),
-                                        registration.getStatus()
-                                )
-                        )
+                        .map(registration -> {
+
+                            Event event =
+                                    registration.getEvent();
+
+                            boolean eventCompleted =
+                                    isEventCompleted(event);
+
+                            boolean feedbackSubmitted =
+                                    feedbackRepository
+                                            .existsByEventIdAndStudentId(
+                                                    event.getId(),
+                                                    student.getId()
+                                            );
+
+                            return new StudentRegistrationResponse(
+                                    registration.getId(),
+                                    event.getId(),
+                                    event.getTitle(),
+                                    event.getEventDate(),
+                                    event.getStartTime(),
+                                    event.getEndTime(),
+                                    event.getVenue(),
+                                    registration.getRegisteredAt(),
+                                    registration.getStatus(),
+                                    eventCompleted,
+                                    feedbackSubmitted
+                            );
+                        })
                         .toList();
 
         return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+// EVENT FEEDBACK
+// =========================================================
+
+    @PostMapping("/events/{eventId}/feedback")
+    public ResponseEntity<?> submitFeedback(
+            @PathVariable Long eventId,
+            @RequestBody EventFeedbackRequest request,
+            Authentication authentication
+    ) {
+
+        Student student =
+                getCurrentStudent(authentication);
+
+        Event event =
+                eventRepository.findById(eventId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Event not found."
+                                )
+                        );
+
+        // ---------------------------------------------------------
+        // EVENT COMPLETION CHECK
+        // ---------------------------------------------------------
+
+        if (!isEventCompleted(event)) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            "Feedback can be submitted only after the event is completed."
+                    );
+        }
+
+        // ---------------------------------------------------------
+        // STUDENT REGISTRATION CHECK
+        // ---------------------------------------------------------
+
+        EventRegistration registration =
+                registrationRepository
+                        .findByEventIdAndStudentId(
+                                eventId,
+                                student.getId()
+                        )
+                        .orElse(null);
+
+        if (registration == null ||
+                !"CONFIRMED".equalsIgnoreCase(
+                        registration.getStatus()
+                )) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            "You can submit feedback only for an event you registered for."
+                    );
+        }
+
+        // ---------------------------------------------------------
+        // DUPLICATE CHECK
+        // ---------------------------------------------------------
+
+        if (feedbackRepository
+                .existsByEventIdAndStudentId(
+                        eventId,
+                        student.getId()
+                )) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            "You have already submitted feedback for this event."
+                    );
+        }
+
+        // ---------------------------------------------------------
+        // VALIDATE RATINGS
+        // ---------------------------------------------------------
+
+        if (!isValidRating(request.getQuestion1Rating()) ||
+                !isValidRating(request.getQuestion2Rating()) ||
+                !isValidRating(request.getQuestion3Rating()) ||
+                !isValidRating(request.getQuestion4Rating()) ||
+                !isValidRating(request.getQuestion5Rating()) ||
+                !isValidRating(request.getQuestion6Rating()) ||
+                !isValidRating(request.getQuestion7Rating()) ||
+                !isValidRating(request.getQuestion8Rating()) ||
+                !isValidRating(request.getQuestion9Rating()) ||
+                !isValidRating(request.getQuestion10Rating())) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            "All ratings must be between 1 and 10."
+                    );
+        }
+
+        // ---------------------------------------------------------
+        // SAVE FEEDBACK
+        // ---------------------------------------------------------
+
+        EventFeedback feedback =
+                new EventFeedback();
+
+        feedback.setEvent(event);
+        feedback.setStudent(student);
+
+        feedback.setQuestion1Rating(
+                request.getQuestion1Rating()
+        );
+
+        feedback.setQuestion2Rating(
+                request.getQuestion2Rating()
+        );
+
+        feedback.setQuestion3Rating(
+                request.getQuestion3Rating()
+        );
+
+        feedback.setQuestion4Rating(
+                request.getQuestion4Rating()
+        );
+
+        feedback.setQuestion5Rating(
+                request.getQuestion5Rating()
+        );
+
+        feedback.setQuestion6Rating(
+                request.getQuestion6Rating()
+        );
+
+        feedback.setQuestion7Rating(
+                request.getQuestion7Rating()
+        );
+
+        feedback.setQuestion8Rating(
+                request.getQuestion8Rating()
+        );
+
+        feedback.setQuestion9Rating(
+                request.getQuestion9Rating()
+        );
+
+        feedback.setQuestion10Rating(
+                request.getQuestion10Rating()
+        );
+
+        feedback.setDescription(
+                request.getDescription() == null
+                        ? null
+                        : request.getDescription().trim()
+        );
+
+        feedbackRepository.save(feedback);
+
+        return ResponseEntity.ok(
+                "Feedback submitted successfully."
+        );
+    }
+
+    @GetMapping("/events/{eventId}/feedback")
+    public ResponseEntity<?> getFeedbackStatus(
+            @PathVariable Long eventId,
+            Authentication authentication
+    ) {
+
+        Student student =
+                getCurrentStudent(authentication);
+
+        boolean submitted =
+                feedbackRepository
+                        .existsByEventIdAndStudentId(
+                                eventId,
+                                student.getId()
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "submitted",
+                        submitted
+                )
+        );
+    }
+
+    private boolean isValidRating(
+            Integer rating
+    ) {
+
+        return rating != null &&
+                rating >= 1 &&
+                rating <= 10;
+    }
+
+    private boolean isEventCompleted(
+            Event event
+    ) {
+
+        if ("COMPLETED".equalsIgnoreCase(
+                event.getStatus()
+        )) {
+            return true;
+        }
+
+        if (event.getEventDate() == null) {
+            return false;
+        }
+
+        if (event.getEndTime() == null) {
+
+            return LocalDate.now()
+                    .isAfter(event.getEventDate());
+        }
+
+        LocalDateTime eventEnd =
+                LocalDateTime.of(
+                        event.getEventDate(),
+                        event.getEndTime()
+                );
+
+        return LocalDateTime.now()
+                .isAfter(eventEnd);
     }
 
     // =========================================================

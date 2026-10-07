@@ -55,3 +55,24 @@ export const updateStudentProfile = (data) => {
     body: JSON.stringify(data),
   });
 };
+
+export const submitEventFeedback = async (
+  eventId,
+  feedback
+) => {
+  return apiFetch(
+    `/student/events/${eventId}/feedback`,
+    {
+      method: "POST",
+      body: JSON.stringify(feedback),
+    }
+  );
+};
+
+export const getEventFeedbackStatus = async (
+  eventId
+) => {
+  return apiFetch(
+    `/student/events/${eventId}/feedback`
+  );
+};
