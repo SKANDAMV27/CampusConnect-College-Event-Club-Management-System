@@ -28,3 +28,7 @@ select {
 a {
   text-decoration: none;
 }
+
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
