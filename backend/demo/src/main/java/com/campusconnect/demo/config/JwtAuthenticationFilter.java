@@ -28,86 +28,75 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-
-        System.out.println("======================================");
-        System.out.println("JWT FILTER");
-        System.out.println("Request: " + request.getMethod() + " " + path);
-
         String header = request.getHeader("Authorization");
 
-        System.out.println("Authorization Header Present: "
-                + (header != null));
-
-        if (header != null && header.startsWith("Bearer ")) {
-
-            String token = header.substring(7);
-
-            try {
-
-                System.out.println("JWT token received");
-
-                boolean valid = jwtService.isValid(token);
-
-                System.out.println("JWT Valid: " + valid);
-
-                if (valid) {
-
-                    String email = jwtService.extractEmail(token);
-                    String role = jwtService.extractRole(token);
-                    System.out.println("JWT Email: " + email);
-                    System.out.println("JWT Role: " + role);
-                    if (role != null) {
-                        role = role.trim().toUpperCase();
-                        String authority;
-                        if (role.startsWith("ROLE_")) {
-                            authority = role;
-                        } else {
-                            authority = "ROLE_" + role;
-                        }
-                        System.out.println(
-                                "Spring Security Authority: "
-                                        + authority
-                        );
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(
-                                        email,
-                                        null,
-                                        List.of(
-                                                new SimpleGrantedAuthority(
-                                                        authority
-                                                )
-                                        )
-                                );
-                        SecurityContextHolder
-                                .getContext()
-                                .setAuthentication(authentication);
-                        System.out.println(
-                                "Authentication SET successfully"
-                        );
-                        System.out.println(
-                                "Authenticated: "
-                                        + SecurityContextHolder
-                                        .getContext()
-                                        .getAuthentication()
-                                        .isAuthenticated()
-                        );
-                    }
-                } else {
-                    System.out.println("JWT IS INVALID");
-                }
-            } catch (Exception e) {
-                System.out.println("JWT ERROR:");
-                e.printStackTrace();
-                SecurityContextHolder.clearContext();
-            }
-        } else {
-
-            System.out.println(
-                    "NO BEARER TOKEN FOUND"
-            );
+        // No Bearer token: continue so Spring Security can decide
+        // whether the requested endpoint is public or protected.
+        if (header == null || !header.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
-        System.out.println("======================================");
+
+        String token = header.substring(7).trim();
+
+        if (token.isEmpty()) {
+            SecurityContextHolder.clearContext();
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Bearer token is empty"
+            );
+            return;
+        }
+
+        try {
+            if (!jwtService.isValid(token)) {
+                SecurityContextHolder.clearContext();
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Invalid or expired token"
+                );
+                return;
+            }
+
+            String email = jwtService.extractEmail(token);
+            String role = jwtService.extractRole(token);
+
+            if (email == null || email.isBlank()
+                    || role == null || role.isBlank()) {
+                SecurityContextHolder.clearContext();
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Invalid token claims"
+                );
+                return;
+            }
+
+            role = role.trim().toUpperCase();
+
+            String authority = role.startsWith("ROLE_")
+                    ? role
+                    : "ROLE_" + role;
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            List.of(new SimpleGrantedAuthority(authority))
+                    );
+
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
+
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
+
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Unable to authenticate token"
+            );
+            return;
+        }
+
         filterChain.doFilter(request, response);
     }
 }
