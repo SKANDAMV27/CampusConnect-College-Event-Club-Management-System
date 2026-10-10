@@ -1,3 +1,4 @@
+
 package com.campusconnect.demo.config;
 
 import lombok.RequiredArgsConstructor;
@@ -48,13 +49,11 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentication
-                        .requestMatchers("/api/auth/**")
-                        .permitAll()
+                        // Public authentication APIs
+                        .requestMatchers("/api/auth/**").permitAll()
 
                         // Public APIs
-                        .requestMatchers("/api/public/**")
-                        .permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
 
                         // Admin APIs
                         .requestMatchers("/api/admin/**")
@@ -64,9 +63,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/student/**")
                         .hasAuthority("ROLE_STUDENT")
 
-                        // Everything else
-                        .anyRequest()
-                        .authenticated()
+                        // Allow requests to the backend root URL
+                        .requestMatchers("/").permitAll()
+
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(
@@ -80,38 +81,35 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
-        configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
-        );
-        configuration.setAllowedMethods(
-                List.of(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "PATCH",
-                        "OPTIONS"
-                )
-        );
-        configuration.setAllowedHeaders(
-                List.of(
-                        "Authorization",
-                        "Content-Type",
-                        "Accept"
-                )
-        );
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Frontend origins allowed to call the backend
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://campusconnect-frontend.onrender.com"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept"
+        ));
 
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
