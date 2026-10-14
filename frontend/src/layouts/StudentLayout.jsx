@@ -15,6 +15,7 @@ import {
   X,
   Sun,
   Moon,
+  GraduationCap,
 } from "lucide-react";
 
 import CampusChatbot from "../components/chatbot";
@@ -55,7 +56,6 @@ function StudentLayout() {
     navigate("/login");
   };
 
-  // Navigation items
   const navItems = [
     {
       name: "Dashboard",
@@ -71,6 +71,11 @@ function StudentLayout() {
       name: "My Registrations",
       path: "/my-registrations",
       icon: ClipboardList,
+    },
+    {
+      name: "Placements",
+      path: "/placements",
+      icon: GraduationCap,
     },
     {
       name: "Profile",

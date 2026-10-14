@@ -21,6 +21,10 @@ import Events from "./pages/student/Events";
 import EventDetails from "./pages/student/EventDetails";
 import MyRegistrations from "./pages/student/MyRegistrations";
 import Profile from "./pages/student/Profile";
+import Feedback from "./pages/student/Feedback";
+
+// Student placement page
+import StudentPlacements from "./pages/placements/StudentPlacements";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./layouts/AdminLayout";
@@ -32,29 +36,21 @@ import AdminStudents from "./pages/admin/AdminStudents";
 import AdminRegistrations from "./pages/admin/AdminRegistrations";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminFeedback from "./pages/admin/AdminFeedback";
+import AdminPlacements from "./pages/placements/AdminPlacements";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* =====================================================
-            DEFAULT
-        ===================================================== */}
-
+        {/* DEFAULT */}
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
         />
 
-        {/* =====================================================
-            AUTHENTICATION
-        ===================================================== */}
-
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        {/* AUTHENTICATION */}
+        <Route path="/login" element={<Login />} />
 
         <Route
           path="/forgot-password"
@@ -86,10 +82,7 @@ function App() {
           }
         />
 
-        {/* =====================================================
-            PUBLIC
-        ===================================================== */}
-
+        {/* PUBLIC */}
         <Route
           path="/home"
           element={
@@ -100,21 +93,14 @@ function App() {
           }
         />
 
-        {/* =====================================================
-            STUDENT ROUTES
-        ===================================================== */}
-
+        {/* STUDENT ROUTES */}
         <Route element={<StudentLayout />}>
-
           <Route
             path="/dashboard"
             element={<StudentDashboard />}
           />
 
-          <Route
-            path="/events"
-            element={<Events />}
-          />
+          <Route path="/events" element={<Events />} />
 
           <Route
             path="/events/:id"
@@ -122,25 +108,27 @@ function App() {
           />
 
           <Route
+            path="/events/:eventId/feedback"
+            element={<Feedback />}
+          />
+
+          <Route
             path="/my-registrations"
             element={<MyRegistrations />}
           />
 
-          <Route
-            path="/profile"
-            element={<Profile />}
-          />
+          <Route path="/profile" element={<Profile />} />
 
+          {/* STUDENT PLACEMENTS */}
+          <Route
+            path="/placements"
+            element={<StudentPlacements />}
+          />
         </Route>
 
-        {/* =====================================================
-            ADMIN ROUTES
-        ===================================================== */}
-
+        {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute role="ADMIN" />}>
-
           <Route element={<AdminLayout />}>
-
             <Route
               path="/admin/dashboard"
               element={<AdminDashboard />}
@@ -167,6 +155,11 @@ function App() {
             />
 
             <Route
+              path="/admin/feedback"
+              element={<AdminFeedback />}
+            />
+
+            <Route
               path="/admin/announcements"
               element={<AdminAnnouncements />}
             />
@@ -176,10 +169,13 @@ function App() {
               element={<AdminProfile />}
             />
 
+            {/* ADMIN PLACEMENTS */}
+            <Route
+              path="/admin/placements"
+              element={<AdminPlacements />}
+            />
           </Route>
-
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

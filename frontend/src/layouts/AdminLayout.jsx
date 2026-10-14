@@ -9,6 +9,7 @@ import {
   UserCircle,
   LogOut,
   GraduationCap,
+  MessageSquareText,
   Menu,
   X,
 } from "lucide-react";
@@ -49,43 +50,50 @@ function AdminLayout() {
     }
   };
 
-  const menuItems = [
-    {
-      name: "Dashboard",
-      path: "/admin/dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Events",
-      path: "/admin/events",
-      icon: CalendarDays,
-    },
-    {
-      name: "Clubs",
-      path: "/admin/clubs",
-      icon: Building2,
-    },
-    {
-      name: "Students",
-      path: "/admin/students",
-      icon: Users,
-    },
-    {
-      name: "Registrations",
-      path: "/admin/registrations",
-      icon: ClipboardList,
-    },
-    {
-      name: "Announcements",
-      path: "/admin/announcements",
-      icon: Megaphone,
-    },
-//     {
-//       name: "Profile",
-//       path: "/admin/profile",
-//       icon: UserCircle,
-//     },
-  ];
+
+const menuItems = [
+  {
+    name: "Dashboard",
+    path: "/admin/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Events",
+    path: "/admin/events",
+    icon: CalendarDays,
+  },
+  {
+    name: "Clubs",
+    path: "/admin/clubs",
+    icon: Building2,
+  },
+  {
+    name: "Students",
+    path: "/admin/students",
+    icon: Users,
+  },
+  {
+    name: "Placements",
+    path: "/admin/placements",
+    icon: GraduationCap,
+  },
+  {
+    name: "Registrations",
+    path: "/admin/registrations",
+    icon: ClipboardList,
+  },
+  {
+    name: "Feedback",
+    path: "/admin/feedback",
+    icon: MessageSquareText,
+  },
+  {
+    name: "Announcements",
+    path: "/admin/announcements",
+    icon: Megaphone,
+  },
+];
+
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
