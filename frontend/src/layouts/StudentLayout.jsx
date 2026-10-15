@@ -82,6 +82,11 @@ function StudentLayout() {
       path: "/profile",
       icon: User,
     },
+    {
+      name: "My Marks",
+      path: "/my-marks",
+      icon: GraduationCap,
+    }
   ];
 
   // Read user information
