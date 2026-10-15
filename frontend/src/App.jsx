@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -7,14 +8,17 @@ import {
 
 import Navbar from "./components/Navbar";
 
+// Public pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AdminRegister from "./pages/AdminRegister";
 
+// Password pages
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
+// Student layout and pages
 import StudentLayout from "./layouts/StudentLayout";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import Events from "./pages/student/Events";
@@ -22,13 +26,16 @@ import EventDetails from "./pages/student/EventDetails";
 import MyRegistrations from "./pages/student/MyRegistrations";
 import Profile from "./pages/student/Profile";
 import Feedback from "./pages/student/Feedback";
+import MyMarks from "./pages/student/MyMarks";
 
-// Student placement page
+// Placement pages
 import StudentPlacements from "./pages/placements/StudentPlacements";
 
+// Authentication and protection
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminLayout from "./layouts/AdminLayout";
 
+// Admin layout and pages
+import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminEvents from "./pages/admin/AdminEvents";
 import AdminClubs from "./pages/admin/AdminClubs";
@@ -38,18 +45,19 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminFeedback from "./pages/admin/AdminFeedback";
 import AdminPlacements from "./pages/placements/AdminPlacements";
+import AdminMarks from "./pages/admin/AdminMarks";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* DEFAULT */}
+        {/* DEFAULT ROUTE */}
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
         />
 
-        {/* AUTHENTICATION */}
+        {/* AUTHENTICATION ROUTES */}
         <Route path="/login" element={<Login />} />
 
         <Route
@@ -82,7 +90,7 @@ function App() {
           }
         />
 
-        {/* PUBLIC */}
+        {/* PUBLIC ROUTES */}
         <Route
           path="/home"
           element={
@@ -93,40 +101,58 @@ function App() {
           }
         />
 
+        {/* ================================== */}
         {/* STUDENT ROUTES */}
-        <Route element={<StudentLayout />}>
-          <Route
-            path="/dashboard"
-            element={<StudentDashboard />}
-          />
+        {/* ================================== */}
+        <Route element={<ProtectedRoute role="STUDENT" />}>
+          <Route element={<StudentLayout />}>
+            <Route
+              path="/dashboard"
+              element={<StudentDashboard />}
+            />
 
-          <Route path="/events" element={<Events />} />
+            <Route
+              path="/events"
+              element={<Events />}
+            />
 
-          <Route
-            path="/events/:id"
-            element={<EventDetails />}
-          />
+            <Route
+              path="/events/:id"
+              element={<EventDetails />}
+            />
 
-          <Route
-            path="/events/:eventId/feedback"
-            element={<Feedback />}
-          />
+            <Route
+              path="/events/:eventId/feedback"
+              element={<Feedback />}
+            />
 
-          <Route
-            path="/my-registrations"
-            element={<MyRegistrations />}
-          />
+            <Route
+              path="/my-registrations"
+              element={<MyRegistrations />}
+            />
 
-          <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/profile"
+              element={<Profile />}
+            />
 
-          {/* STUDENT PLACEMENTS */}
-          <Route
-            path="/placements"
-            element={<StudentPlacements />}
-          />
+            {/* Student placements */}
+            <Route
+              path="/placements"
+              element={<StudentPlacements />}
+            />
+
+            {/* Student marks */}
+            <Route
+              path="/my-marks"
+              element={<MyMarks />}
+            />
+          </Route>
         </Route>
 
+        {/* ================================== */}
         {/* ADMIN ROUTES */}
+        {/* ================================== */}
         <Route element={<ProtectedRoute role="ADMIN" />}>
           <Route element={<AdminLayout />}>
             <Route
@@ -169,13 +195,25 @@ function App() {
               element={<AdminProfile />}
             />
 
-            {/* ADMIN PLACEMENTS */}
+            {/* Admin placements */}
             <Route
               path="/admin/placements"
               element={<AdminPlacements />}
             />
+
+            {/* Admin marks management */}
+            <Route
+              path="/admin/marks"
+              element={<AdminMarks />}
+            />
           </Route>
         </Route>
+
+        {/* UNKNOWN ROUTES */}
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
       </Routes>
     </BrowserRouter>
   );
